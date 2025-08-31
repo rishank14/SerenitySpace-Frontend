@@ -43,10 +43,12 @@ export default function AuthForm({ type }: AuthFormProps) {
   const onSubmit = async (values: any) => {
     setLoading(true);
     try {
+      const baseURL = process.env.NEXT_PUBLIC_API_BASE_URL;
+
       const endpoint =
         type === "sign-up"
-          ? "https://serenityspace-backend.onrender.com/api/v1/users/register"
-          : "https://serenityspace-backend.onrender.com/api/v1/users/login";
+          ? `${baseURL}/users/register`
+          : `${baseURL}/users/login`;
 
       const payload =
         type === "sign-up"
@@ -63,11 +65,12 @@ export default function AuthForm({ type }: AuthFormProps) {
 
       const res = await axios.post(endpoint, payload, { withCredentials: true });
 
-      // ✅ Store userId and accessToken correctly
+      // Store userId, username, and accessToken
       const user = res.data.message?.user;
       const accessToken = res.data.message?.accessToken;
 
       if (user?._id) localStorage.setItem("userId", user._id);
+      if (user?.username) localStorage.setItem("username", user.username);
       if (accessToken) localStorage.setItem("token", accessToken);
 
       toast.success(res.data.data || "Success");
@@ -101,11 +104,7 @@ export default function AuthForm({ type }: AuthFormProps) {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input
-                        type="email"
-                        placeholder="you@example.com"
-                        {...field}
-                      />
+                      <Input type="email" placeholder="you@example.com" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -134,10 +133,7 @@ export default function AuthForm({ type }: AuthFormProps) {
                 <FormItem>
                   <FormLabel>Email or Username</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="you@example.com or johndoe"
-                      {...field}
-                    />
+                    <Input placeholder="you@example.com or johndoe" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -152,11 +148,7 @@ export default function AuthForm({ type }: AuthFormProps) {
               <FormItem>
                 <FormLabel>Password</FormLabel>
                 <FormControl>
-                  <Input
-                    type="password"
-                    placeholder="••••••••"
-                    {...field}
-                  />
+                  <Input type="password" placeholder="••••••••" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
