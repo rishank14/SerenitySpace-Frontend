@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,20 +15,21 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Loader2 } from "lucide-react";
+import API from "@/lib/axios";
 
-// 🕒 Helper: Current IST time formatted for datetime-local input
-function getCurrentISTLocalDateTime(): string {
+// 🕒 Helper: Current IST time +1 minute formatted for datetime-local input
+function getCurrentISTLocalDateTimePlus1(): string {
   const now = new Date();
-  const ist = new Date(
-    now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
-  );
-  const offset = ist.getTimezoneOffset(); // should be -330
+  const ist = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+  ist.setMinutes(ist.getMinutes() + 1); // add 1 min
+  const offset = ist.getTimezoneOffset();
   const localIST = new Date(ist.getTime() - offset * 60 * 1000);
   return localIST.toISOString().slice(0, 16); // yyyy-MM-ddTHH:mm
 }
 
 // 🕒 Helper: Convert backend UTC to IST for datetime-local input
-function convertUTCtoISTLocal(utcStr: string) {
+function convertUTCtoISTLocal(utcStr?: string) {
+  if (!utcStr) return getCurrentISTLocalDateTimePlus1();
   const utcDate = new Date(utcStr);
   const istStr = utcDate.toLocaleString("en-US", {
     timeZone: "Asia/Kolkata",
@@ -63,23 +63,51 @@ export default function VaultForm({
   onCancel,
 }: VaultFormProps) {
   const [loading, setLoading] = useState(false);
+  const [timeWarning, setTimeWarning] = useState<string>("");
 
   const form = useForm({
     defaultValues: {
       message: defaultValues?.message || "",
       deliverAt: defaultValues?.deliverAt
         ? convertUTCtoISTLocal(defaultValues.deliverAt)
-        : getCurrentISTLocalDateTime(),
+        : getCurrentISTLocalDateTimePlus1(),
     },
   });
 
+  // Handle datetime-local input change
+  const onDeliverAtChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    form.setValue("deliverAt", value);
+
+    if (!value) {
+      setTimeWarning("⚠ Deliver time required.");
+      return;
+    }
+
+    const selectedDate = new Date(value);
+    const now = new Date();
+    now.setSeconds(0, 0);
+    now.setMinutes(now.getMinutes() + 1); // ensure minimum 1 min
+
+    if (selectedDate < now) {
+      setTimeWarning("⚠ Deliver time must be at least 1 minute in the future.");
+    } else {
+      setTimeWarning("");
+    }
+  };
+
   const onSubmit = async (values: any) => {
+    if (!values.deliverAt) {
+      toast.error("Please select a deliver time.");
+      return;
+    }
+
     const selectedDate = new Date(values.deliverAt);
     const now = new Date();
-    now.setSeconds(0, 0); // remove seconds/milliseconds
+    now.setSeconds(0, 0);
+    now.setMinutes(now.getMinutes() + 1); // min 1 min ahead
 
-    // ✅ Validate future time
-    if (selectedDate <= now) {
+    if (selectedDate < now) {
       toast.error("Deliver time must be at least 1 minute in the future.");
       return;
     }
@@ -89,38 +117,27 @@ export default function VaultForm({
       const token = localStorage.getItem("token");
       if (!token) throw new Error("User not authenticated");
 
-      // Convert IST input to UTC before sending to backend
-      const deliverAtUTC = new Date(values.deliverAt).toISOString();
-
       const payload = {
         message: values.message,
-        deliverAt: deliverAtUTC,
+        deliverAt: new Date(values.deliverAt).toISOString(), // IST → UTC
       };
 
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
       let res;
-
       if (vaultId) {
-        res = await axios.patch(
-          `${baseUrl}/message-vault/update/${vaultId}`,
-          payload,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        res = await API.patch(`/message-vault/update/${vaultId}`, payload, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         toast.success("Vault updated");
       } else {
-        res = await axios.post(`${baseUrl}/message-vault/create`, payload, {
+        res = await API.post("/message-vault/create", payload, {
           headers: { Authorization: `Bearer ${token}` },
         });
         toast.success("Vault created");
       }
 
-      onSuccess(
-        res.data.message.messages?.[0] || res.data.message || res.data.data
-      );
+      onSuccess(res.data.message.messages?.[0] || res.data.message || res.data.data);
     } catch (err: any) {
-      toast.error(
-        err.response?.data?.message || err.message || "Failed to submit vault"
-      );
+      toast.error(err.response?.data?.message || err.message || "Failed to submit vault");
     } finally {
       setLoading(false);
     }
@@ -154,9 +171,13 @@ export default function VaultForm({
                   <Input
                     type="datetime-local"
                     {...field}
-                    min={getCurrentISTLocalDateTime()} // prevent past times
+                    min={getCurrentISTLocalDateTimePlus1()}
+                    onChange={onDeliverAtChange}
                   />
                 </FormControl>
+                {timeWarning && (
+                  <p className="text-yellow-500 text-sm mt-1">{timeWarning}</p>
+                )}
                 <FormMessage />
               </FormItem>
             )}

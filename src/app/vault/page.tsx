@@ -1,89 +1,109 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
-import { toast } from "sonner";
 import { AnimatePresence, motion } from "framer-motion";
+import { toast } from "sonner";
+import { Plus, Clock } from "lucide-react";
+
 import VaultCard, { Vault } from "@/components/vault/VaultCard";
 import VaultForm from "@/components/vault/VaultForm";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { Button } from "@/components/ui/button";
-import { Plus, Clock } from "lucide-react";
 import { io, Socket } from "socket.io-client";
 import { formatDateTime } from "@/lib/formatDateTime";
+import API from "@/lib/axios";
 
 export default function VaultPage() {
   const [upcoming, setUpcoming] = useState<Vault[]>([]);
   const [delivered, setDelivered] = useState<Vault[]>([]);
-  const [highlighted, setHighlighted] = useState<string[]>([]); // track newly delivered
+  const [highlighted, setHighlighted] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingVault, setEditingVault] = useState<Vault | null>(null);
-
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [selectedVaultId, setSelectedVaultId] = useState<string | null>(null);
 
   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+  const userId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
 
+  // Fetch vaults from backend
   const fetchVaults = async () => {
+    if (!userId) return;
     setLoading(true);
     try {
-      const token = localStorage.getItem("token");
-      const userId = localStorage.getItem("userId");
-      if (!token || !userId) throw new Error("User not authenticated");
-
       const [upcomingRes, deliveredRes] = await Promise.all([
-        axios.get(`${baseUrl}/message-vault/upcoming/${userId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        axios.get(`${baseUrl}/message-vault/delivered/${userId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
+        API.get(`/message-vault/upcoming/${userId}`),
+        API.get(`/message-vault/delivered/${userId}`)
       ]);
-
-      setUpcoming(upcomingRes.data.message.messages || []);
-      setDelivered(deliveredRes.data.message.messages || []);
+      setUpcoming(upcomingRes.data?.message?.messages || []);
+      setDelivered(deliveredRes.data?.message?.messages || []);
     } catch (err: any) {
-      toast.error(
-        err.response?.data?.message || err.message || "Failed to fetch vaults"
-      );
+      toast.error(err.response?.data?.message || err.message || "Failed to fetch vaults");
     } finally {
       setLoading(false);
     }
   };
 
-  // Socket.IO & real-time highlight
-  useEffect(() => {
-    const socket: Socket = io((baseUrl || "").replace("/api/v1", ""));
-    const userId = localStorage.getItem("userId");
-    if (userId) socket.emit("register", userId);
+  // Helper: move vaults to delivered with highlight + toast
+  const deliverVaults = (vaults: Vault[]) => {
+    if (!vaults.length) return;
+    setDelivered((prev) => [...vaults, ...prev]);
+    setHighlighted((prev) => [...prev, ...vaults.map((v) => v._id)]);
+    setTimeout(() => {
+      setHighlighted((prev) =>
+        prev.filter((id) => !vaults.map((v) => v._id).includes(id))
+      );
+    }, 3000);
 
-    socket.on("vaultDelivered", (vault: Vault) => {
-      setUpcoming((prev) => prev.filter((v) => v._id !== vault._id));
-      setDelivered((prev) => [vault, ...prev]);
-      setHighlighted((prev) => [...prev, vault._id]);
-
-      // Remove highlight after 3 seconds
-      setTimeout(() => {
-        setHighlighted((prev) => prev.filter((id) => id !== vault._id));
-      }, 3000);
-
-      toast.success(`Delivered: "${vault.message}"`, {
-        description: `Delivered at ${formatDateTime(vault.deliverAt).replace(
-          /am|pm/i,
-          (m) => m.toUpperCase()
-        )}`,
+    vaults.forEach((v) =>
+      toast.success(`Delivered: "${v.message}"`, {
+        description: `Delivered at ${formatDateTime(v.deliverAt).replace(/am|pm/i, (m) => m.toUpperCase())}`,
         duration: 6000,
-      });
-    });
+      })
+    );
+  };
 
-    fetchVaults();
+  // Socket + auto-delivery
+  useEffect(() => {
+    if (!userId) return;
+
+    const socket: Socket = io((baseUrl || "").replace("/api/v1", ""));
+    socket.emit("register", userId);
+
+    const onVaultDelivered = (vault: Vault) => {
+      setUpcoming((prev) => prev.filter((v) => v._id !== vault._id));
+      deliverVaults([vault]);
+    };
+
+    socket.on("vaultDelivered", onVaultDelivered);
+    void fetchVaults();
+
+    // Auto-check every minute for vaults that are due
+    const interval = setInterval(() => {
+      setUpcoming((prev) => {
+        const now = new Date();
+        now.setSeconds(0, 0);
+        const readyToDeliver: Vault[] = [];
+        const stillUpcoming: Vault[] = [];
+
+        prev.forEach((v) => {
+          if (new Date(v.deliverAt) <= now) readyToDeliver.push(v);
+          else stillUpcoming.push(v);
+        });
+
+        deliverVaults(readyToDeliver);
+        return stillUpcoming;
+      });
+    }, 60000);
 
     return () => {
+      socket.off("vaultDelivered", onVaultDelivered);
       socket.disconnect();
+      clearInterval(interval);
     };
-  }, [baseUrl]);
+  }, [baseUrl, userId]);
 
+  // Delete handlers
   const confirmDelete = (id: string) => {
     setSelectedVaultId(id);
     setConfirmOpen(true);
@@ -92,33 +112,26 @@ export default function VaultPage() {
   const handleDelete = async () => {
     if (!selectedVaultId) return;
     try {
-      const token = localStorage.getItem("token");
-      if (!token) throw new Error("User not authenticated");
-
-      await axios.delete(`${baseUrl}/message-vault/delete/${selectedVaultId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
+      await API.delete(`/message-vault/delete/${selectedVaultId}`);
       setUpcoming((prev) => prev.filter((v) => v._id !== selectedVaultId));
       setDelivered((prev) => prev.filter((v) => v._id !== selectedVaultId));
       setHighlighted((prev) => prev.filter((id) => id !== selectedVaultId));
-
       toast.success("Vault deleted");
     } catch (err: any) {
-      toast.error(
-        err.response?.data?.message || err.message || "Failed to delete vault"
-      );
+      toast.error(err.response?.data?.message || err.message || "Failed to delete vault");
     } finally {
       setConfirmOpen(false);
       setSelectedVaultId(null);
     }
   };
 
+  // Edit vault
   const handleEdit = (vault: Vault) => {
     setEditingVault(vault);
     setShowForm(true);
   };
 
+  // VaultForm success
   const handleFormSuccess = (newVault?: Vault) => {
     setShowForm(false);
     setEditingVault(null);
@@ -127,16 +140,8 @@ export default function VaultPage() {
     const now = new Date();
     const isDelivered = new Date(newVault.deliverAt) <= now;
 
-    if (isDelivered) {
-      setDelivered((prev) => [newVault, ...prev]);
-      setUpcoming((prev) => prev.filter((v) => v._id !== newVault._id));
-
-      // Highlight newly delivered
-      setHighlighted((prev) => [...prev, newVault._id]);
-      setTimeout(() => {
-        setHighlighted((prev) => prev.filter((id) => id !== newVault._id));
-      }, 3000);
-    } else {
+    if (isDelivered) deliverVaults([newVault]);
+    else {
       setUpcoming((prev) => {
         const exists = prev.find((v) => v._id === newVault._id);
         if (exists) return prev.map((v) => (v._id === newVault._id ? newVault : v));
@@ -148,6 +153,7 @@ export default function VaultPage() {
 
   return (
     <div className="max-w-4xl mx-auto py-8 space-y-6">
+      {/* Header */}
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Message Vault</h1>
         <Button onClick={() => setShowForm(true)}>
@@ -155,6 +161,7 @@ export default function VaultPage() {
         </Button>
       </div>
 
+      {/* Vault Form */}
       <AnimatePresence>
         {showForm && (
           <motion.div
@@ -166,16 +173,12 @@ export default function VaultPage() {
           >
             <VaultForm
               vaultId={editingVault?._id}
-              defaultValues={
-                editingVault
-                  ? { message: editingVault.message, deliverAt: editingVault.deliverAt }
-                  : undefined
-              }
+              defaultValues={editingVault ? {
+                message: editingVault.message,
+                deliverAt: editingVault.deliverAt
+              } : undefined}
               onSuccess={handleFormSuccess}
-              onCancel={() => {
-                setShowForm(false);
-                setEditingVault(null);
-              }}
+              onCancel={() => { setShowForm(false); setEditingVault(null); }}
             />
           </motion.div>
         )}
@@ -198,7 +201,7 @@ export default function VaultPage() {
                   key={v._id}
                   vault={v}
                   onEdit={handleEdit}
-                  onDelete={confirmDelete}
+                  onDelete={() => confirmDelete(v._id)}
                   highlight={highlighted.includes(v._id)}
                 />
               ))}
@@ -223,7 +226,7 @@ export default function VaultPage() {
                 <VaultCard
                   key={v._id}
                   vault={v}
-                  onDelete={confirmDelete}
+                  onDelete={() => confirmDelete(v._id)}
                   highlight={highlighted.includes(v._id)}
                 />
               ))}
@@ -232,7 +235,7 @@ export default function VaultPage() {
         )}
       </div>
 
-      {/* Confirm Dialog */}
+      {/* Confirm Delete */}
       <ConfirmDialog
         open={confirmOpen}
         onCancel={() => setConfirmOpen(false)}

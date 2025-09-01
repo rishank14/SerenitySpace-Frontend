@@ -20,11 +20,24 @@ export interface Vent {
 
 export interface VentCardProps {
   vent: Vent;
-  currentUserId?: string; // ✅ needed to show buttons
+  currentUserId?: string;
   onEdit?: (vent: Vent) => void;
   onDelete?: (ventId: string) => void;
   highlight?: boolean;
 }
+
+const moodClasses: Record<Mood, string> = {
+  happy: "bg-yellow-200 text-yellow-800 dark:bg-yellow-700 dark:text-yellow-100",
+  sad: "bg-blue-200 text-blue-800 dark:bg-blue-700 dark:text-blue-100",
+  angry: "bg-red-200 text-red-800 dark:bg-red-700 dark:text-red-100",
+  anxious: "bg-purple-200 text-purple-800 dark:bg-purple-700 dark:text-purple-100",
+  neutral: "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200",
+};
+
+const visibilityClasses: Record<Visibility, string> = {
+  public: "bg-green-200 text-green-800 dark:bg-green-700 dark:text-green-100",
+  private: "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200",
+};
 
 export default function VentCard({
   vent,
@@ -34,27 +47,10 @@ export default function VentCard({
   highlight = false,
 }: VentCardProps) {
   const username = vent.user?.username ?? "Anonymous";
-  const isMine = vent.user?._id === currentUserId; // ✅ this must match your logged-in user id
+  const isMine = vent.user?._id === currentUserId;
 
-  const visibilityBadge =
-    vent.visibility === "public"
-      ? "bg-green-200 text-green-800 dark:bg-green-700 dark:text-green-100"
-      : vent.visibility === "private"
-      ? "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
-      : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300";
-
-  const moodBadge =
-    vent.mood === "happy"
-      ? "bg-yellow-200 text-yellow-800 dark:bg-yellow-700 dark:text-yellow-100"
-      : vent.mood === "sad"
-      ? "bg-blue-200 text-blue-800 dark:bg-blue-700 dark:text-blue-100"
-      : vent.mood === "angry"
-      ? "bg-red-200 text-red-800 dark:bg-red-700 dark:text-red-100"
-      : vent.mood === "anxious"
-      ? "bg-purple-200 text-purple-800 dark:bg-purple-700 dark:text-purple-100"
-      : vent.mood === "neutral"
-      ? "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
-      : "";
+  const moodBadge = vent.mood ? moodClasses[vent.mood] : "";
+  const visibilityBadge = vent.visibility ? visibilityClasses[vent.visibility] : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300";
 
   return (
     <motion.div
@@ -65,7 +61,6 @@ export default function VentCard({
       className={highlight ? "ring-2 ring-blue-400 dark:ring-blue-600 rounded-lg transition-all" : ""}
     >
       <Card className="relative hover:shadow-xl transition-shadow dark:bg-gray-800 dark:text-gray-100">
-        {/* Header: username + visibility badge */}
         <CardHeader className="flex justify-between items-start gap-2">
           <CardTitle className="text-lg font-semibold truncate">{username}</CardTitle>
           <span className={`text-xs font-medium px-2 py-1 rounded-full whitespace-nowrap ${visibilityBadge}`}>
@@ -73,7 +68,6 @@ export default function VentCard({
           </span>
         </CardHeader>
 
-        {/* Mood badge */}
         {vent.mood && (
           <div className="px-4">
             <span className={`text-xs font-medium px-2 py-1 rounded-full inline-block ${moodBadge}`}>
@@ -82,23 +76,21 @@ export default function VentCard({
           </div>
         )}
 
-        {/* Message content */}
         <CardContent className="mt-2 flex flex-col gap-3">
           <CardDescription className="text-gray-700 dark:text-gray-200 break-words whitespace-pre-wrap">
             {vent.message}
           </CardDescription>
 
-          {/* Footer: date + edit/delete */}
           <div className="flex justify-between items-center text-sm text-gray-500 dark:text-gray-400">
-            <span>{format(new Date(vent.updatedAt), "PPP, p")}</span>
+            <span>{vent.updatedAt ? format(new Date(vent.updatedAt), "PPP, p") : "Unknown date"}</span>
             <div className="flex gap-2">
               {onEdit && isMine && (
-                <Button variant="outline" size="sm" onClick={() => onEdit(vent)} title="Edit">
+                <Button variant="outline" size="sm" onClick={() => onEdit(vent)} title="Edit Vent">
                   <Edit size={16} />
                 </Button>
               )}
               {onDelete && isMine && (
-                <Button variant="outline" size="sm" onClick={() => onDelete(vent._id)} title="Delete">
+                <Button variant="outline" size="sm" onClick={() => onDelete(vent._id)} title="Delete Vent">
                   <Trash size={16} />
                 </Button>
               )}

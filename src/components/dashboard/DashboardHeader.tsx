@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
+import API from "@/lib/axios"; // <- axios instance with token
 
 export default function DashboardHeader() {
   const [username, setUsername] = useState("");
@@ -11,15 +12,12 @@ export default function DashboardHeader() {
   useEffect(() => {
     async function fetchUser() {
       try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/dashboard`,
-          { credentials: "include" }
-        );
-
-        const data = await res.json();
-        setUsername(data?.message?.vents?.[0]?.user?.username || "User");
+        // Axios automatically adds Authorization header from interceptor
+        const res = await API.get("/dashboard/");
+        setUsername(res.data?.message?.vents?.[0]?.user?.username || "User");
       } catch (error) {
         console.error("Error fetching user", error);
+        setUsername("User"); // fallback
       } finally {
         setLoading(false);
       }

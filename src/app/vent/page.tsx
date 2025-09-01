@@ -1,15 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
-import { toast } from "sonner";
 import { AnimatePresence, motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { Plus } from "lucide-react";
+
 import VentCard, { Vent, Mood } from "@/components/vent/VentCard";
 import VentForm from "@/components/vent/VentForm";
 import ConfirmDialog from "@/components/ConfirmDialog";
-import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
+
+import API from "@/lib/axios"; // centralized axios instance
 
 const allowedMoods: Mood[] = ["happy", "sad", "angry", "anxious", "neutral"];
 
@@ -18,31 +20,24 @@ export default function VentPage() {
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingVent, setEditingVent] = useState<Vent | null>(null);
-
   const [filterMood, setFilterMood] = useState<string>("");
   const [showMyVents, setShowMyVents] = useState(false);
-
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [selectedVentId, setSelectedVentId] = useState<string | null>(null);
 
-  const currentUserId =
-    typeof window !== "undefined" ? localStorage.getItem("userId") : null;
+  const currentUserId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
 
+  // Fetch vents from backend
   const fetchVents = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("token");
-      if (!token) throw new Error("User not authenticated");
+      let url = "/vents";
+      if (showMyVents && currentUserId) url = `/vents/user/${currentUserId}`;
 
       const params: any = {};
       if (filterMood) params.mood = filterMood;
-      if (showMyVents) params.mine = true;
 
-      const res = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/vents`, {
-        headers: { Authorization: `Bearer ${token}` },
-        params,
-      });
-
+      const res = await API.get(url, { params, withCredentials: true });
       setVents(res.data?.message?.vents || []);
     } catch (err: any) {
       toast.error(err.response?.data?.message || err.message || "Failed to fetch vents");
@@ -55,11 +50,13 @@ export default function VentPage() {
     fetchVents();
   }, [filterMood, showMyVents]);
 
+  // Edit vent
   const handleEdit = (vent: Vent) => {
     setEditingVent(vent);
     setShowForm(true);
   };
 
+  // Create/Update vent success
   const handleFormSuccess = (newVent?: Vent) => {
     setShowForm(false);
     setEditingVent(null);
@@ -68,13 +65,14 @@ export default function VentPage() {
       setVents((prev) => {
         const exists = prev.find((v) => v._id === newVent._id);
         if (exists) return prev.map((v) => (v._id === newVent._id ? newVent : v));
-        else return [newVent, ...prev];
+        return [newVent, ...prev];
       });
     } else {
       fetchVents();
     }
   };
 
+  // Delete vent
   const confirmDelete = (id: string) => {
     setSelectedVentId(id);
     setConfirmOpen(true);
@@ -83,13 +81,7 @@ export default function VentPage() {
   const handleDelete = async () => {
     if (!selectedVentId) return;
     try {
-      const token = localStorage.getItem("token");
-      if (!token) throw new Error("User not authenticated");
-
-      await axios.delete(`${process.env.NEXT_PUBLIC_API_BASE_URL}/vents/delete/${selectedVentId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
+      await API.delete(`/vents/delete/${selectedVentId}`, { withCredentials: true });
       toast.success("Vent deleted");
       setVents((prev) => prev.filter((v) => v._id !== selectedVentId));
     } catch (err: any) {
@@ -109,16 +101,10 @@ export default function VentPage() {
           <Button onClick={() => setShowForm(true)} className="flex items-center gap-1">
             <Plus className="w-4 h-4" /> Add Vent
           </Button>
-          <Button
-            variant={showMyVents ? "outline" : "default"}
-            onClick={() => setShowMyVents(false)}
-          >
-            All Public Vents
+          <Button variant={!showMyVents ? "default" : "outline"} onClick={() => setShowMyVents(false)}>
+            All Vents
           </Button>
-          <Button
-            variant={showMyVents ? "default" : "outline"}
-            onClick={() => setShowMyVents(true)}
-          >
+          <Button variant={showMyVents ? "default" : "outline"} onClick={() => setShowMyVents(true)}>
             My Vents
           </Button>
         </div>
@@ -126,10 +112,7 @@ export default function VentPage() {
 
       {/* Mood Filter */}
       <div className="flex flex-col md:flex-row gap-4 items-center">
-        <Select
-          value={filterMood || "all"}
-          onValueChange={(val) => setFilterMood(val === "all" ? "" : val)}
-        >
+        <Select value={filterMood || "all"} onValueChange={(val) => setFilterMood(val === "all" ? "" : val)}>
           <SelectTrigger className="w-48">
             <SelectValue placeholder="Filter by Mood" />
           </SelectTrigger>
@@ -142,11 +125,7 @@ export default function VentPage() {
             ))}
           </SelectContent>
         </Select>
-        {filterMood && (
-          <Button variant="outline" onClick={() => setFilterMood("")}>
-            Clear Mood
-          </Button>
-        )}
+        {filterMood && <Button variant="outline" onClick={() => setFilterMood("")}>Clear Mood</Button>}
       </div>
 
       {/* Vent Form */}

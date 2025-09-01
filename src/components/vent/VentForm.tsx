@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { toast } from "sonner";
-import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -15,6 +14,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Loader2 } from "lucide-react";
+import API from "@/lib/axios";
 
 export type Mood = "sad" | "angry" | "anxious" | "happy" | "neutral";
 export type Visibility = "public" | "private";
@@ -53,31 +53,15 @@ export default function VentForm({
   const onSubmit: SubmitHandler<VentFormValues> = async (values) => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        toast.error("User not authenticated");
-        return;
-      }
+      const res = ventId
+        ? await API.patch(`/vents/update/${ventId}`, values)
+        : await API.post("/vents/create", values);
 
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-      let res;
-
-      if (ventId) {
-        res = await axios.patch(`${baseUrl}/vents/update/${ventId}`, values, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        toast.success("Vent updated");
-      } else {
-        res = await axios.post(`${baseUrl}/vents/create`, values, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        toast.success("Vent created");
-      }
-
-      onSuccess(res.data.message);
+      toast.success(ventId ? "Vent updated successfully!" : "Vent created successfully!");
+      onSuccess(res.data?.message);
       form.reset(values);
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to submit vent");
+      toast.error(err.response?.data?.message || err.message || "Failed to submit vent");
     } finally {
       setLoading(false);
     }
@@ -154,7 +138,7 @@ export default function VentForm({
 
           {/* Buttons */}
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={onCancel}>
+            <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
