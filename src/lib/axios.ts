@@ -1,30 +1,30 @@
 // src/lib/axios.ts
 import axios, { AxiosRequestHeaders, InternalAxiosRequestConfig } from "axios";
+import { toast } from "sonner"; // client-side toast
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 // Axios instance
 const API = axios.create({
   baseURL: BASE_URL,
-  withCredentials: true, // cookies ke liye
+  withCredentials: true, // for sending refresh token cookie
 });
 
 // REQUEST INTERCEPTOR
 API.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (typeof window !== "undefined") {
     const token = localStorage.getItem("accessToken");
-    if (token) {
-      // Fix TS error: ensure headers exist
-      if (!config.headers) config.headers = {} as AxiosRequestHeaders;
 
-      // Add Authorization header
+    if (token) {
+      if (!config.headers) config.headers = {} as AxiosRequestHeaders;
       (config.headers as AxiosRequestHeaders).Authorization = `Bearer ${token}`;
     }
   }
+
   return config;
 });
 
-// RESPONSE INTERCEPTOR (Refresh Token)
+// RESPONSE INTERCEPTOR
 API.interceptors.response.use(
   (res) => res,
   async (error) => {
@@ -52,7 +52,16 @@ API.interceptors.response.use(
 
         return API(originalRequest);
       } catch (refreshErr) {
-        localStorage.removeItem("accessToken");
+        // ✅ If refresh fails, logout + show toast + redirect
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("accessToken");
+
+          setTimeout(() => {
+            toast.error("Session expired. Please sign in again.");
+            window.location.href = "/sign-in";
+          }, 100);
+        }
+
         return Promise.reject(refreshErr);
       }
     }
