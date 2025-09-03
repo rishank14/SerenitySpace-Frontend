@@ -1,26 +1,24 @@
 // src/lib/axios.ts
 import axios, { AxiosRequestHeaders, InternalAxiosRequestConfig } from "axios";
-import { toast } from "sonner"; // client-side toast
+import { toast } from "sonner";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 // Axios instance
 const API = axios.create({
   baseURL: BASE_URL,
-  withCredentials: true, // for sending refresh token cookie
+  withCredentials: true, // send refresh token cookie
 });
 
 // REQUEST INTERCEPTOR
 API.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (typeof window !== "undefined") {
     const token = localStorage.getItem("accessToken");
-
     if (token) {
       if (!config.headers) config.headers = {} as AxiosRequestHeaders;
       (config.headers as AxiosRequestHeaders).Authorization = `Bearer ${token}`;
     }
   }
-
   return config;
 });
 
@@ -32,8 +30,21 @@ API.interceptors.response.use(
 
     if (
       error.response?.status === 401 &&
+      originalRequest.url?.includes("/users/login")
+    ) {
+      if (typeof window !== "undefined") {
+        toast.error(error.response?.data?.message || "Invalid credentials");
+      }
+      return Promise.reject(error);
+    }
+
+    // Refresh token logic for other 401 errors
+    if (
+      error.response?.status === 401 &&
       !originalRequest._retry &&
-      !originalRequest.url?.includes("/users/refresh-token")
+      !originalRequest.url?.includes("/users/refresh-token") &&
+      !originalRequest.url?.includes("/users/login") &&
+      !originalRequest.url?.includes("/users/register")
     ) {
       originalRequest._retry = true;
 
@@ -51,21 +62,29 @@ API.interceptors.response.use(
         (originalRequest.headers as AxiosRequestHeaders).Authorization = `Bearer ${newAccessToken}`;
 
         return API(originalRequest);
-      } catch (refreshErr) {
-        // ✅ If refresh fails, logout + show toast + redirect
+      } catch (refreshErr: any) {
         if (typeof window !== "undefined") {
           localStorage.removeItem("accessToken");
-
-          setTimeout(() => {
+          if (window.location.pathname !== "/sign-in") {
             toast.error("Session expired. Please sign in again.");
             window.location.href = "/sign-in";
-          }, 100);
+          }
         }
-
         return Promise.reject(refreshErr);
       }
     }
 
+    // Network error
+    if (typeof window !== "undefined" && !error.response) {
+      toast.error("Network error. Please try again.");
+      return Promise.reject(new Error("Network error. Please try again."));
+    }
+
+    if (error.response?.data?.message) {
+      return Promise.reject(new Error(error.response.data.message));
+    }
+
+    // Fallback
     return Promise.reject(error);
   }
 );

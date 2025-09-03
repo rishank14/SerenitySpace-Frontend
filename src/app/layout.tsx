@@ -17,6 +17,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
    title: "SerenitySpace",
+   icons: {
+      icon: "/logo.png",
+      shortcut: "/logo.png",
+      apple: "/logo.png",
+   },
    description: "A calming mental health app",
 };
 
