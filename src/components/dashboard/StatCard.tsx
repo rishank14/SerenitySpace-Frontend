@@ -1,3 +1,5 @@
+"use client";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDateTime } from "@/lib/formatDateTime";
 import { cn } from "@/lib/utils";
@@ -6,23 +8,24 @@ type StatCardProps = {
   title: string;
   content: string;
   timestamp?: string;
-  type: "vent" | "reflection" | "message";
+  type?: "vent" | "reflection" | "message";
 };
 
 export default function StatCard({
   title,
   content,
   timestamp,
-  type,
 }: StatCardProps) {
   return (
     <Card
       className={cn(
-        "transition-all hover:shadow-lg border-border bg-card"
+        "transition-all border border-purple-400 bg-card hover:shadow-purple-300/40 hover:shadow-lg"
       )}
     >
       <CardHeader>
-        <CardTitle className="text-lg">{title}</CardTitle>
+        <CardTitle className="text-lg text-black dark:text-white">
+          {title}
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <p className="text-sm text-muted-foreground mb-2">

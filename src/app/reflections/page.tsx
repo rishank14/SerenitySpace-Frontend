@@ -126,7 +126,7 @@ export default function ReflectionsPage() {
    };
 
    return (
-      <div className="max-w-4xl mx-auto py-8 space-y-8">
+      <div className="max-w-6xl mx-auto py-8 space-y-6 px-4">
          {/* Header */}
          <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -135,9 +135,9 @@ export default function ReflectionsPage() {
             className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
          >
             <div className="flex flex-col">
-               <h1 className="text-4xl font-extrabold text-gray-900 dark:text-gray-100 tracking-tight">
+               <h2 className="text-4xl md:text-5xl font-extrabold text-purple-600 dark:text-purple-400 tracking-tight">
                   Your Reflections
-               </h1>
+               </h2>
                <div className="mt-1 flex flex-col">
                   <span className="block h-[2px] w-24 bg-gradient-to-r from-purple-400 to-purple-600 rounded-full"></span>
                   <p className="mt-2 text-gray-500 dark:text-gray-400 text-sm">
