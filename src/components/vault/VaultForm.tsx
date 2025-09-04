@@ -164,7 +164,7 @@ export default function VaultForm({
                            <Textarea
                               placeholder="Write something for your future self..."
                               {...field}
-                              className="resize-none max-h-40 border-gray-300 dark:border-gray-700 focus:ring-2 focus:ring-teal-400 dark:focus:ring-teal-500 focus:outline-none rounded-md"
+                              className="resize-none rounded-md border-gray-300 dark:border-gray-700 focus:ring-2 focus:ring-teal-400 dark:focus:ring-teal-500 focus:outline-none"
                            />
                         </FormControl>
                         <FormMessage />
@@ -190,13 +190,9 @@ export default function VaultForm({
                            />
                         </FormControl>
                         {timeWarning && (
-                           <motion.p
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              className="text-yellow-500 text-sm mt-1"
-                           >
+                           <p className="text-yellow-500 text-sm mt-1">
                               {timeWarning}
-                           </motion.p>
+                           </p>
                         )}
                         <FormMessage />
                      </FormItem>
@@ -218,17 +214,10 @@ export default function VaultForm({
                      disabled={loading}
                   >
                      {loading ? (
-                        <motion.span
-                           className="flex items-center gap-2"
-                           animate={{ rotate: 360 }}
-                           transition={{
-                              repeat: Infinity,
-                              duration: 1,
-                              ease: "linear",
-                           }}
-                        >
-                           <Loader2 className="w-4 h-4" /> Please wait...
-                        </motion.span>
+                        <>
+                           <Loader2 className="w-4 h-4 animate-spin" /> Please
+                           wait...
+                        </>
                      ) : vaultId ? (
                         "Update Vault"
                      ) : (

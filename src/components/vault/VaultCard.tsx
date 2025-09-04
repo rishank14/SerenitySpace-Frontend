@@ -50,20 +50,16 @@ export default function VaultCard({
             animate={{
                opacity: 1,
                y: 0,
-               scale: showHighlight ? [1, 1.03, 1] : 1,
+               scale: showHighlight ? [1, 1.02, 1] : 1,
                boxShadow: showHighlight
-                  ? "0 0 20px 6px rgba(52, 211, 153, 0.4)"
+                  ? "0 0 12px 3px rgba(52, 211, 153, 0.4)"
                   : "0 0 0 0 rgba(52, 211, 153, 0)",
-               transition: {
-                  duration: 0.8,
-                  repeat: showHighlight ? Infinity : 0,
-                  repeatType: "mirror",
-               },
+               transition: { duration: 0.6, repeat: showHighlight ? 1 : 0 },
             }}
             exit={{ opacity: 0, y: -10 }}
             className="rounded-xl"
          >
-            <Card className="relative hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 dark:bg-gray-800 dark:text-gray-100">
+            <Card className="relative transition-shadow dark:bg-gray-800 dark:text-gray-100">
                <CardHeader className="pb-2 flex flex-col gap-1">
                   <CardTitle className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100">
                      Vault
@@ -87,7 +83,8 @@ export default function VaultCard({
                         <motion.span
                            initial={{ opacity: 0 }}
                            animate={{ opacity: 1 }}
-                           transition={{ duration: 0.5 }}
+                           exit={{ opacity: 0 }}
+                           transition={{ duration: 0.3 }}
                            className="text-xs sm:text-sm px-2 py-1 bg-green-500 dark:bg-green-600 text-white rounded-md font-medium shadow-sm"
                         >
                            Delivered
