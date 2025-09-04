@@ -9,18 +9,18 @@ import { motion } from "framer-motion";
 
 import { useAuth } from "@/context/AuthContext";
 import {
-  signUpSchema,
-  signInSchema,
-  SignUpInput,
-  SignInInput,
+   signUpSchema,
+   signInSchema,
+   SignUpInput,
+   SignInInput,
 } from "@/lib/validations/auth.schema";
 import {
-  Form,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage,
+   Form,
+   FormField,
+   FormItem,
+   FormLabel,
+   FormControl,
+   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -29,179 +29,198 @@ import { Loader2 } from "lucide-react";
 type AuthType = "sign-in" | "sign-up";
 
 interface AuthFormProps {
-  type: AuthType;
+   type: AuthType;
 }
 
 export default function AuthForm({ type }: AuthFormProps) {
-  const router = useRouter();
-  const { user, loading: authLoading, login, signup } = useAuth();
-  const [loading, setLoading] = useState(false);
-  const [formError, setFormError] = useState("");
+   const router = useRouter();
+   const { user, loading: authLoading, login, signup } = useAuth();
+   const [loading, setLoading] = useState(false);
+   const [formError, setFormError] = useState("");
 
-  const isSignUp = type === "sign-up";
+   const isSignUp = type === "sign-up";
 
-  const form = useForm<SignUpInput | SignInInput>({
-    resolver: zodResolver(isSignUp ? signUpSchema : signInSchema),
-    defaultValues: isSignUp
-      ? { email: "", username: "", password: "" }
-      : { identifier: "", password: "" },
-  });
+   const form = useForm<SignUpInput | SignInInput>({
+      resolver: zodResolver(isSignUp ? signUpSchema : signInSchema),
+      defaultValues: isSignUp
+         ? { email: "", username: "", password: "" }
+         : { identifier: "", password: "" },
+   });
 
-  // Redirect logged-in users away from auth pages
-  useEffect(() => {
-    if (!authLoading && user) {
-      router.replace("/dashboard");
-    }
-  }, [authLoading, user, router]);
-
-  const onSubmit = async (values: SignUpInput | SignInInput) => {
-    setLoading(true);
-    setFormError("");
-
-    try {
-      if (isSignUp) {
-        const { email, username, password } = values as SignUpInput;
-        await signup(username, email, password);
-      } else {
-        const { identifier, password } = values as SignInInput;
-        await login(identifier, password);
+   // Redirect logged-in users away from auth pages
+   useEffect(() => {
+      if (!authLoading && user) {
+         router.replace("/dashboard");
       }
+   }, [authLoading, user, router]);
 
-      router.replace("/dashboard");
-    } catch (err: any) {
-      // Display backend message in form
-      setFormError(err.message || "Something went wrong");
-    } finally {
-      setLoading(false);
-    }
-  };
+   const onSubmit = async (values: SignUpInput | SignInInput) => {
+      setLoading(true);
+      setFormError("");
 
-  if (authLoading || user) {
-    return (
-      <div className="w-full max-w-md mx-auto py-12 px-4 text-center">
-        <Loader2 className="mx-auto h-6 w-6 animate-spin" />
-      </div>
-    );
-  }
+      try {
+         if (isSignUp) {
+            const { email, username, password } = values as SignUpInput;
+            await signup(username, email, password);
+         } else {
+            const { identifier, password } = values as SignInInput;
+            await login(identifier, password);
+         }
 
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="w-full max-w-md mx-auto py-12 px-4"
-    >
-      <h1 className="text-3xl font-bold text-center mb-1">
-        {isSignUp ? "Create an Account" : "Welcome Back"}
-      </h1>
-      <p className="text-center text-muted-foreground mb-6">
-        {isSignUp
-          ? "Join SerenitySpace and start your mindful journey ✨"
-          : "Welcome back to SerenitySpace 🌿"}
-      </p>
+         router.replace("/dashboard");
+      } catch (err: any) {
+         // Display backend message in form
+         setFormError(err.message || "Something went wrong");
+      } finally {
+         setLoading(false);
+      }
+   };
 
-      <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          className="bg-white dark:bg-gray-950 border border-border rounded-xl shadow-md p-6 space-y-6"
-        >
-          {isSignUp && (
-            <>
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="you@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="username"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Username</FormLabel>
-                    <FormControl>
-                      <Input placeholder="johndoe" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </>
-          )}
+   if (authLoading || user) {
+      return (
+         <div className="w-full max-w-md mx-auto py-12 px-4 text-center">
+            <Loader2 className="mx-auto h-6 w-6 animate-spin" />
+         </div>
+      );
+   }
 
-          {!isSignUp && (
-            <FormField
-              control={form.control}
-              name="identifier"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email or Username</FormLabel>
-                  <FormControl>
-                    <Input placeholder="you@example.com or johndoe" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
+   return (
+      <motion.div
+         initial={{ opacity: 0, y: 20 }}
+         animate={{ opacity: 1, y: 0 }}
+         transition={{ duration: 0.5 }}
+         className="w-full max-w-md mx-auto py-12 px-4"
+      >
+         <h1 className="text-3xl font-bold text-center mb-1">
+            {isSignUp ? "Create an Account" : "Welcome Back"}
+         </h1>
+         <p className="text-center text-muted-foreground mb-6">
+            {isSignUp
+               ? "Join SerenitySpace and start your mindful journey ✨"
+               : "Welcome back to SerenitySpace 🌿"}
+         </p>
 
-          <FormField
-            control={form.control}
-            name="password"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Password</FormLabel>
-                <FormControl>
-                  <Input type="password" placeholder="••••••••" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+         <Form {...form}>
+            <form
+               onSubmit={form.handleSubmit(onSubmit)}
+               className="bg-white dark:bg-gray-950 border border-border rounded-xl shadow-md p-6 space-y-6"
+            >
+               {isSignUp && (
+                  <>
+                     <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                           <FormItem>
+                              <FormLabel>Email</FormLabel>
+                              <FormControl>
+                                 <Input
+                                    type="email"
+                                    placeholder="you@example.com"
+                                    {...field}
+                                 />
+                              </FormControl>
+                              <FormMessage />
+                           </FormItem>
+                        )}
+                     />
+                     <FormField
+                        control={form.control}
+                        name="username"
+                        render={({ field }) => (
+                           <FormItem>
+                              <FormLabel>Username</FormLabel>
+                              <FormControl>
+                                 <Input placeholder="johndoe" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                           </FormItem>
+                        )}
+                     />
+                  </>
+               )}
 
-          {formError && (
-            <p className="text-red-500 text-sm text-center">{formError}</p>
-          )}
+               {!isSignUp && (
+                  <FormField
+                     control={form.control}
+                     name="identifier"
+                     render={({ field }) => (
+                        <FormItem>
+                           <FormLabel>Email or Username</FormLabel>
+                           <FormControl>
+                              <Input
+                                 placeholder="you@example.com or johndoe"
+                                 {...field}
+                              />
+                           </FormControl>
+                           <FormMessage />
+                        </FormItem>
+                     )}
+                  />
+               )}
 
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Please wait...
-              </>
-            ) : isSignUp ? (
-              "Sign Up"
+               <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                     <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                           <Input
+                              type="password"
+                              placeholder="••••••••"
+                              {...field}
+                           />
+                        </FormControl>
+                        <FormMessage />
+                     </FormItem>
+                  )}
+               />
+
+               {formError && (
+                  <p className="text-red-500 text-sm text-center">
+                     {formError}
+                  </p>
+               )}
+
+               <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? (
+                     <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Please wait...
+                     </>
+                  ) : isSignUp ? (
+                     "Sign Up"
+                  ) : (
+                     "Sign In"
+                  )}
+               </Button>
+            </form>
+         </Form>
+
+         <p className="mt-4 text-center text-sm text-muted-foreground">
+            {isSignUp ? (
+               <>
+                  Already have an account?{" "}
+                  <Link
+                     href="/sign-in"
+                     className="text-primary hover:underline"
+                  >
+                     Sign In
+                  </Link>
+               </>
             ) : (
-              "Sign In"
+               <>
+                  Don’t have an account?{" "}
+                  <Link
+                     href="/sign-up"
+                     className="text-primary hover:underline"
+                  >
+                     Sign Up
+                  </Link>
+               </>
             )}
-          </Button>
-        </form>
-      </Form>
-
-      <p className="mt-4 text-center text-sm text-muted-foreground">
-        {isSignUp ? (
-          <>
-            Already have an account?{" "}
-            <Link href="/sign-in" className="text-primary hover:underline">
-              Sign In
-            </Link>
-          </>
-        ) : (
-          <>
-            Don’t have an account?{" "}
-            <Link href="/sign-up" className="text-primary hover:underline">
-              Sign Up
-            </Link>
-          </>
-        )}
-      </p>
-    </motion.div>
-  );
+         </p>
+      </motion.div>
+   );
 }

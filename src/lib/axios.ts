@@ -44,7 +44,8 @@ API.interceptors.response.use(
       !originalRequest._retry &&
       !originalRequest.url?.includes("/users/refresh-token") &&
       !originalRequest.url?.includes("/users/login") &&
-      !originalRequest.url?.includes("/users/register")
+      !originalRequest.url?.includes("/users/register") &&
+      !originalRequest.url?.includes("/users/change-password")
     ) {
       originalRequest._retry = true;
 

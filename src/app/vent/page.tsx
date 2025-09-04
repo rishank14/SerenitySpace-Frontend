@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
@@ -9,9 +9,15 @@ import VentCard, { Vent, Mood } from "@/components/vent/VentCard";
 import VentForm from "@/components/vent/VentForm";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { Button } from "@/components/ui/button";
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from "@/components/ui/select";
 
-import API from "@/lib/axios"; // centralized axios instance
+import API from "@/lib/axios";
 
 const allowedMoods: Mood[] = ["happy", "sad", "angry", "anxious", "neutral"];
 
@@ -25,9 +31,11 @@ export default function VentPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [selectedVentId, setSelectedVentId] = useState<string | null>(null);
 
-  const currentUserId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
+  const formRef = useRef<HTMLDivElement>(null);
+  const currentUserId =
+    typeof window !== "undefined" ? localStorage.getItem("userId") : null;
 
-  // Fetch vents from backend
+  // Fetch all vents
   const fetchVents = async () => {
     setLoading(true);
     try {
@@ -37,10 +45,12 @@ export default function VentPage() {
       const params: any = {};
       if (filterMood) params.mood = filterMood;
 
-      const res = await API.get(url, { params, withCredentials: true });
+      const res = await API.get(url, { params });
       setVents(res.data?.message?.vents || []);
     } catch (err: any) {
-      toast.error(err.response?.data?.message || err.message || "Failed to fetch vents");
+      toast.error(
+        err.response?.data?.message || err.message || "Failed to fetch vents"
+      );
     } finally {
       setLoading(false);
     }
@@ -50,13 +60,17 @@ export default function VentPage() {
     fetchVents();
   }, [filterMood, showMyVents]);
 
-  // Edit vent
+  // Edit
   const handleEdit = (vent: Vent) => {
     setEditingVent(vent);
     setShowForm(true);
+
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 400); // wait for animation to render
   };
 
-  // Create/Update vent success
+  // Create or update success
   const handleFormSuccess = (newVent?: Vent) => {
     setShowForm(false);
     setEditingVent(null);
@@ -72,7 +86,7 @@ export default function VentPage() {
     }
   };
 
-  // Delete vent
+  // Delete
   const confirmDelete = (id: string) => {
     setSelectedVentId(id);
     setConfirmOpen(true);
@@ -81,11 +95,11 @@ export default function VentPage() {
   const handleDelete = async () => {
     if (!selectedVentId) return;
     try {
-      await API.delete(`/vents/delete/${selectedVentId}`, { withCredentials: true });
+      await API.delete(`/vents/delete/${selectedVentId}`);
       toast.success("Vent deleted");
       setVents((prev) => prev.filter((v) => v._id !== selectedVentId));
     } catch (err: any) {
-      toast.error(err.response?.data?.message || err.message || "Failed to delete vent");
+      toast.error(err.response?.data?.message || "Failed to delete vent");
     } finally {
       setConfirmOpen(false);
       setSelectedVentId(null);
@@ -94,25 +108,45 @@ export default function VentPage() {
 
   return (
     <div className="max-w-6xl mx-auto py-8 space-y-6 px-4">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-        <h1 className="text-3xl font-bold">Vents</h1>
-        <div className="flex gap-2 flex-wrap">
-          <Button onClick={() => setShowForm(true)} className="flex items-center gap-1">
-            <Plus className="w-4 h-4" /> Add Vent
-          </Button>
-          <Button variant={!showMyVents ? "default" : "outline"} onClick={() => setShowMyVents(false)}>
-            All Vents
-          </Button>
-          <Button variant={showMyVents ? "default" : "outline"} onClick={() => setShowMyVents(true)}>
-            My Vents
-          </Button>
-        </div>
+      {/* 🧠 Heading */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.1 }}
+      >
+        <h2 className="text-4xl md:text-5xl font-extrabold text-purple-600 dark:text-purple-400 tracking-tight">
+          Vent Room
+        </h2>
+        <p className="text-muted-foreground text-sm mt-1">
+          Let it out. No filters. No judgment.
+        </p>
+      </motion.div>
+
+      {/* Buttons */}
+      <div className="flex flex-wrap gap-2">
+        <Button onClick={() => setShowForm(true)} className="flex items-center gap-1">
+          <Plus className="w-4 h-4" /> Add Vent
+        </Button>
+        <Button
+          variant={!showMyVents ? "default" : "outline"}
+          onClick={() => setShowMyVents(false)}
+        >
+          All Vents
+        </Button>
+        <Button
+          variant={showMyVents ? "default" : "outline"}
+          onClick={() => setShowMyVents(true)}
+        >
+          My Vents
+        </Button>
       </div>
 
-      {/* Mood Filter */}
+      {/* Filter */}
       <div className="flex flex-col md:flex-row gap-4 items-center">
-        <Select value={filterMood || "all"} onValueChange={(val) => setFilterMood(val === "all" ? "" : val)}>
+        <Select
+          value={filterMood || "all"}
+          onValueChange={(val) => setFilterMood(val === "all" ? "" : val)}
+        >
           <SelectTrigger className="w-48">
             <SelectValue placeholder="Filter by Mood" />
           </SelectTrigger>
@@ -125,34 +159,47 @@ export default function VentPage() {
             ))}
           </SelectContent>
         </Select>
-        {filterMood && <Button variant="outline" onClick={() => setFilterMood("")}>Clear Mood</Button>}
+        {filterMood && (
+          <Button variant="outline" onClick={() => setFilterMood("")}>
+            Clear Mood
+          </Button>
+        )}
       </div>
 
-      {/* Vent Form */}
-      <AnimatePresence>
-        {showForm && (
-          <motion.div
-            key="vent-form"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
-          >
-            <VentForm
-              ventId={editingVent?._id}
-              defaultValues={editingVent ? {
-                message: editingVent.message,
-                mood: editingVent.mood as Mood,
-                visibility: editingVent.visibility,
-              } : undefined}
-              onSuccess={handleFormSuccess}
-              onCancel={() => { setShowForm(false); setEditingVent(null); }}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* 🧠 Form + Scroll ref */}
+      <div ref={formRef} className="scroll-mt-24">
+        <AnimatePresence>
+          {showForm && (
+            <motion.div
+              key="vent-form"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <VentForm
+                ventId={editingVent?._id}
+                defaultValues={
+                  editingVent
+                    ? {
+                        message: editingVent.message,
+                        mood: editingVent.mood as Mood,
+                        visibility: editingVent.visibility,
+                      }
+                    : undefined
+                }
+                onSuccess={handleFormSuccess}
+                onCancel={() => {
+                  setShowForm(false);
+                  setEditingVent(null);
+                }}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
-      {/* Vent List */}
+      {/* Vents */}
       {loading ? (
         <p className="text-center text-gray-500">Loading vents...</p>
       ) : vents.length === 0 ? (
@@ -181,7 +228,7 @@ export default function VentPage() {
         </div>
       )}
 
-      {/* Confirm Delete Dialog */}
+      {/* Confirm delete */}
       <ConfirmDialog
         open={confirmOpen}
         onCancel={() => setConfirmOpen(false)}
