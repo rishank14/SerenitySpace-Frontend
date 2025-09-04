@@ -61,6 +61,9 @@ export default function VentCard({
       ? visibilityClasses[vent.visibility]
       : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300";
 
+   const capitalize = (str: string) =>
+      str.charAt(0).toUpperCase() + str.slice(1);
+
    return (
       <motion.div
          layout
@@ -78,8 +81,7 @@ export default function VentCard({
                <span
                   className={`absolute top-0 right-0 px-3 py-[6px] text-xs font-medium rounded-bl-md ${visibilityBadge}`}
                >
-                  {vent.visibility.charAt(0).toUpperCase() +
-                     vent.visibility.slice(1)}
+                  {capitalize(vent.visibility)}
                </span>
             )}
 
@@ -94,7 +96,7 @@ export default function VentCard({
                   <span
                      className={`text-xs font-medium px-2 py-1 rounded-full inline-block ${moodBadge}`}
                   >
-                     {vent.mood.charAt(0).toUpperCase() + vent.mood.slice(1)}
+                     {capitalize(vent.mood)}
                   </span>
                </div>
             )}
@@ -119,6 +121,7 @@ export default function VentCard({
                               size="sm"
                               onClick={() => onEdit(vent)}
                               title="Edit Vent"
+                              aria-label="Edit Vent"
                            >
                               <Edit size={16} />
                            </Button>
@@ -129,6 +132,8 @@ export default function VentCard({
                               size="sm"
                               onClick={() => onDelete(vent._id)}
                               title="Delete Vent"
+                              aria-label="Delete Vent"
+                              className="hover:text-red-500"
                            >
                               <Trash size={16} />
                            </Button>

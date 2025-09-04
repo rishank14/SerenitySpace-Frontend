@@ -14,6 +14,7 @@ import {
    FormMessage,
 } from "@/components/ui/form";
 import { Loader2 } from "lucide-react";
+import { motion } from "framer-motion";
 import API from "@/lib/axios";
 
 export type Mood = "sad" | "angry" | "anxious" | "happy" | "neutral";
@@ -52,10 +53,11 @@ export default function VentForm({
    });
 
    useEffect(() => {
-      if (messageRef.current) {
-         messageRef.current.focus();
-      }
+      messageRef.current?.focus();
    }, []);
+
+   const capitalize = (str: string) =>
+      str.charAt(0).toUpperCase() + str.slice(1);
 
    const onSubmit: SubmitHandler<VentFormValues> = async (values) => {
       setLoading(true);
@@ -81,7 +83,13 @@ export default function VentForm({
    };
 
    return (
-      <div className="bg-white dark:bg-gray-950 p-6 rounded-xl shadow-lg">
+      <motion.div
+         initial={{ opacity: 0, y: -10 }}
+         animate={{ opacity: 1, y: 0 }}
+         exit={{ opacity: 0, y: -10 }}
+         transition={{ duration: 0.3 }}
+         className="bg-white dark:bg-gray-950 p-6 rounded-xl shadow-lg"
+      >
          <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                {/* Message */}
@@ -115,11 +123,12 @@ export default function VentForm({
                         <FormControl>
                            <select
                               {...field}
+                              aria-label="Select your mood"
                               className="w-full border rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary"
                            >
                               {allowedMoods.map((m) => (
                                  <option key={m} value={m}>
-                                    {m.charAt(0).toUpperCase() + m.slice(1)}
+                                    {capitalize(m)}
                                  </option>
                               ))}
                            </select>
@@ -139,6 +148,7 @@ export default function VentForm({
                         <FormControl>
                            <select
                               {...field}
+                              aria-label="Select visibility"
                               className="w-full border rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary"
                            >
                               <option value="public">Public</option>
@@ -175,6 +185,6 @@ export default function VentForm({
                </div>
             </form>
          </Form>
-      </div>
+      </motion.div>
    );
 }
