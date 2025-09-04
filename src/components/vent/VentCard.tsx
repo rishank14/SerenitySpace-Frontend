@@ -76,7 +76,7 @@ export default function VentCard({
                : ""
          }
       >
-         <Card className="relative overflow-hidden hover:shadow-xl transition-shadow dark:bg-gray-800 dark:text-gray-100">
+         <Card className="relative overflow-hidden dark:bg-gray-800 dark:text-gray-100">
             {vent.visibility && (
                <span
                   className={`absolute top-0 right-0 px-3 py-[6px] text-xs font-medium rounded-bl-md ${visibilityBadge}`}
@@ -117,23 +117,24 @@ export default function VentCard({
                      <div className="flex gap-2">
                         {onEdit && (
                            <Button
-                              variant="outline"
+                              variant="ghost"
                               size="sm"
                               onClick={() => onEdit(vent)}
                               title="Edit Vent"
                               aria-label="Edit Vent"
+                              className="bg-transparent border-none hover:bg-transparent"
                            >
                               <Edit size={16} />
                            </Button>
                         )}
                         {onDelete && (
                            <Button
-                              variant="outline"
+                              variant="ghost"
                               size="sm"
                               onClick={() => onDelete(vent._id)}
                               title="Delete Vent"
                               aria-label="Delete Vent"
-                              className="hover:text-red-500"
+                              className="bg-transparent border-none hover:bg-transparent hover:text-red-500"
                            >
                               <Trash size={16} />
                            </Button>
