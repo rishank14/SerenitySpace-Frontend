@@ -10,6 +10,9 @@ const API = axios.create({
   withCredentials: true, // send refresh token cookie
 });
 
+// Protected routes for auto redirect
+const protectedRoutes = ["/vault", "/vent", "/reflections", "/dashboard"];
+
 // REQUEST INTERCEPTOR
 API.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (typeof window !== "undefined") {
@@ -28,6 +31,7 @@ API.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
+    // Login error
     if (
       error.response?.status === 401 &&
       originalRequest.url?.includes("/users/login")
@@ -66,7 +70,9 @@ API.interceptors.response.use(
       } catch (refreshErr: any) {
         if (typeof window !== "undefined") {
           localStorage.removeItem("accessToken");
-          if (window.location.pathname !== "/sign-in") {
+
+          // Only redirect if on protected route
+          if (protectedRoutes.includes(window.location.pathname)) {
             toast.error("Session expired. Please sign in again.");
             window.location.href = "/sign-in";
           }

@@ -96,11 +96,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
    };
 
    const refreshUser = async () => {
+      setUser(null);
       try {
          const res = await API.get("/users/current-user");
          setUser(res.data.message);
       } catch {
-         setUser(null);
          localStorage.removeItem("accessToken");
       }
    };
