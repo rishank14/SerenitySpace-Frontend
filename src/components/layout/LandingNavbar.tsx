@@ -53,7 +53,7 @@ export default function LandingNavbar() {
             behavior: "smooth",
             block: "start",
          });
-         setMenuOpen(false); // close mobile menu
+         setMenuOpen(false);
       }
    };
 
@@ -69,7 +69,7 @@ export default function LandingNavbar() {
                {/* Logo */}
                <div
                   className="flex items-center space-x-2 flex-1 cursor-pointer"
-                  onClick={() => scrollToSection("#")}
+                  onClick={() => scrollToSection("#hero")}
                >
                   <motion.div
                      whileHover={{ scale: 1.05 }}

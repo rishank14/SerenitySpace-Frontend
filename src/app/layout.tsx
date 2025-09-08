@@ -4,7 +4,8 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/context/AuthContext";
 import { Toaster } from "sonner";
-import NavbarSwitcher from "@/components/navbar/NavbarSwitcher";
+import NavbarSwitcher from "@/components/layout/NavbarSwitcher";
+import { Footer } from "@/components/layout/Footer";
 
 const geistSans = Geist({
    variable: "--font-geist-sans",
@@ -45,6 +46,7 @@ export default function RootLayout({
                <AuthProvider>
                   <NavbarSwitcher />
                   <main className="pt-16">{children}</main>
+                  <Footer />
                   <Toaster
                      position="bottom-right"
                      richColors
