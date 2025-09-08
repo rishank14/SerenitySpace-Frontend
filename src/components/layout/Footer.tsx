@@ -38,9 +38,9 @@ export const Footer: React.FC = () => {
                </p>
                <div className="flex items-center space-x-4 mt-4 sm:mt-0">
                   <Badge variant="secondary" className="text-xs">
-   <Users className="mr-1 h-3 w-3" />
-   Built for calm minds
-</Badge>
+                     <Users className="mr-1 h-3 w-3" />
+                     Built for calm minds
+                  </Badge>
                </div>
             </div>
          </div>

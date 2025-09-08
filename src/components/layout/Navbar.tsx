@@ -27,11 +27,11 @@ export default function Navbar() {
          transition={{ duration: 0.5, ease: "easeOut" }}
       >
          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
+            <div className="flex items-center justify-between h-16 gap-x-4">
                {/* Logo */}
                <Link
                   href="/dashboard"
-                  className="flex items-center space-x-2 flex-shrink-0"
+                  className="flex items-center space-x-2 flex-shrink-0 min-w-0"
                >
                   <motion.div
                      whileHover={{ scale: 1.05 }}
@@ -44,7 +44,7 @@ export default function Navbar() {
                         width={50}
                         height={50}
                      />
-                     <span className="text-2xl font-bold text-primary dark:text-purple-300 transition-colors duration-300">
+                     <span className="text-lg sm:text-2xl font-bold text-primary dark:text-purple-300 transition-colors duration-300">
                         SerenitySpace
                      </span>
                   </motion.div>
