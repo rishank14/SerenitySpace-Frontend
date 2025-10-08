@@ -1,19 +1,25 @@
-// src/lib/axios.ts
-import axios, { AxiosRequestHeaders, InternalAxiosRequestConfig, AxiosError } from "axios";
+import axios, { AxiosRequestHeaders, AxiosError, InternalAxiosRequestConfig } from "axios";
 import { toast } from "sonner";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
-// Axios instance
-const API = axios.create({
-  baseURL: BASE_URL,
-  withCredentials: true, // send refresh token cookie
-});
+// Type for refresh token response
+interface RefreshResponse {
+  message: {
+    accessToken: string;
+  };
+}
 
 // Protected routes for auto redirect
 const protectedRoutes = ["/vault", "/vent", "/reflections", "/dashboard"];
 
-// REQUEST INTERCEPTOR
+// Axios instance
+const API = axios.create({
+  baseURL: BASE_URL,
+  withCredentials: true,
+});
+
+// Request interceptor
 API.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (typeof window !== "undefined") {
     const token = localStorage.getItem("accessToken");
@@ -25,24 +31,26 @@ API.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   return config;
 });
 
-// RESPONSE INTERCEPTOR
+// Response interceptor
 API.interceptors.response.use(
   (res) => res,
-  async (error: unknown) => {
-    const axiosError = error as AxiosError & { config?: InternalAxiosRequestConfig & { _retry?: boolean }; response?: any };
-    const originalRequest = axiosError.config;
+  async (err: unknown) => {
+    const error = err as AxiosError<{ message?: string }> & {
+      config?: InternalAxiosRequestConfig & { _retry?: boolean };
+    };
+    const originalRequest = error.config;
 
-    // Login error
-    if (axiosError.response?.status === 401 && originalRequest?.url?.includes("/users/login")) {
+    // Login 401
+    if (error.response?.status === 401 && originalRequest?.url?.includes("/users/login")) {
       if (typeof window !== "undefined") {
-        toast.error(axiosError.response?.data?.message || "Invalid credentials");
+        toast.error(error.response.data?.message || "Invalid credentials");
       }
-      return Promise.reject(axiosError);
+      return Promise.reject(error);
     }
 
-    // Refresh token logic for other 401 errors
+    // Refresh token flow
     if (
-      axiosError.response?.status === 401 &&
+      error.response?.status === 401 &&
       originalRequest &&
       !originalRequest._retry &&
       !originalRequest.url?.includes("/users/refresh-token") &&
@@ -51,16 +59,14 @@ API.interceptors.response.use(
       !originalRequest.url?.includes("/users/change-password")
     ) {
       originalRequest._retry = true;
-
       try {
-        const refreshRes = await axios.post(
+        const refreshRes = await axios.post<RefreshResponse>(
           `${BASE_URL}/users/refresh-token`,
           {},
           { withCredentials: true }
         );
-
-        const newAccessToken = refreshRes.data?.message?.accessToken as string;
-        if (newAccessToken) localStorage.setItem("accessToken", newAccessToken);
+        const newAccessToken = refreshRes.data.message.accessToken;
+        localStorage.setItem("accessToken", newAccessToken);
 
         if (!originalRequest.headers) originalRequest.headers = {} as AxiosRequestHeaders;
         (originalRequest.headers as AxiosRequestHeaders).Authorization = `Bearer ${newAccessToken}`;
@@ -69,7 +75,6 @@ API.interceptors.response.use(
       } catch (refreshErr: unknown) {
         if (typeof window !== "undefined") {
           localStorage.removeItem("accessToken");
-
           if (protectedRoutes.includes(window.location.pathname)) {
             toast.error("Session expired. Please sign in again.");
             window.location.href = "/sign-in";
@@ -80,17 +85,17 @@ API.interceptors.response.use(
     }
 
     // Network error
-    if (typeof window !== "undefined" && !(axiosError as AxiosError).response) {
+    if (typeof window !== "undefined" && !error.response) {
       toast.error("Network error. Please try again.");
       return Promise.reject(new Error("Network error. Please try again."));
     }
 
-    if (axiosError.response?.data?.message) {
-      return Promise.reject(new Error(axiosError.response.data.message));
+    // Backend error with message
+    if (error.response?.data?.message) {
+      return Promise.reject(new Error(error.response.data.message));
     }
 
-    // Fallback
-    return Promise.reject(axiosError);
+    return Promise.reject(error);
   }
 );
 
