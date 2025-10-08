@@ -19,6 +19,11 @@ const API = axios.create({
   withCredentials: true,
 });
 
+// Type guard for AxiosError
+function isAxiosError<T = any>(err: unknown): err is AxiosError<T> {
+  return (err as AxiosError<T>).isAxiosError !== undefined;
+}
+
 // Request interceptor
 API.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   if (typeof window !== "undefined") {
@@ -91,7 +96,7 @@ API.interceptors.response.use(
     }
 
     // Backend error with message
-    if (error.response?.data?.message) {
+    if (isAxiosError<{ message: string }>(error) && error.response?.data?.message) {
       return Promise.reject(new Error(error.response.data.message));
     }
 

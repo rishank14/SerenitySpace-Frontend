@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, FieldValues } from "react-hook-form";
 import { toast } from "sonner";
 import API from "@/lib/axios";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/form";
 import { Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { Reflection } from "@/components/reflections/ReflectionCard";
 
 interface ReflectionFormProps {
    reflectionId?: string;
@@ -26,7 +27,7 @@ interface ReflectionFormProps {
       emotion?: string;
       tags?: string;
    };
-   onSuccess: (newReflection?: any) => void;
+   onSuccess: (newReflection?: Reflection) => void;
    onCancel: () => void;
 }
 
@@ -37,6 +38,7 @@ const allowedEmotions = [
    "neutral",
    "excited",
 ] as const;
+type Emotion = (typeof allowedEmotions)[number];
 
 export default function ReflectionForm({
    reflectionId,
@@ -46,16 +48,23 @@ export default function ReflectionForm({
 }: ReflectionFormProps) {
    const [loading, setLoading] = useState(false);
 
-   const form = useForm({
+   type FormValues = {
+      title: string;
+      content: string;
+      emotion: Emotion | "";
+      tags: string;
+   };
+
+   const form = useForm<FormValues>({
       defaultValues: {
          title: defaultValues?.title || "",
          content: defaultValues?.content || "",
-         emotion: defaultValues?.emotion || "",
+         emotion: (defaultValues?.emotion as Emotion) || "",
          tags: defaultValues?.tags || "",
       },
    });
 
-   const onSubmit = async (values: any) => {
+   const onSubmit = async (values: FormValues) => {
       setLoading(true);
       try {
          const userId = localStorage.getItem("userId");
@@ -67,28 +76,31 @@ export default function ReflectionForm({
             tags: values.tags
                ? values.tags
                     .split(",")
-                    .map((tag: string) => tag.trim())
+                    .map((tag) => tag.trim())
                     .filter(Boolean)
                : [],
          };
 
          let res;
          if (reflectionId) {
-            res = await API.patch(
+            res = await API.patch<{ message: Reflection }>(
                `/reflections/update/${reflectionId}`,
                payload
             );
             toast.success("Reflection updated");
          } else {
-            res = await API.post("/reflections/create", payload);
+            res = await API.post<{ message: Reflection }>(
+               "/reflections/create",
+               payload
+            );
             toast.success("Reflection created");
          }
 
          onSuccess(res.data.message);
-      } catch (err: any) {
-         toast.error(
-            err.response?.data?.message || "Failed to submit reflection"
-         );
+      } catch (err: unknown) {
+         const msg =
+            err instanceof Error ? err.message : "Failed to submit reflection";
+         toast.error(msg);
       } finally {
          setLoading(false);
       }

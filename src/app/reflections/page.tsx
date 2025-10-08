@@ -28,6 +28,7 @@ const allowedEmotions = [
    "neutral",
    "excited",
 ] as const;
+type Emotion = (typeof allowedEmotions)[number];
 
 export default function ReflectionsPage() {
    const [reflections, setReflections] = useState<Reflection[]>([]);
@@ -37,7 +38,6 @@ export default function ReflectionsPage() {
       useState<Reflection | null>(null);
    const [filterEmotion, setFilterEmotion] = useState<string>("");
    const [filterTag, setFilterTag] = useState<string>("");
-
    const [confirmOpen, setConfirmOpen] = useState(false);
    const [selectedReflectionId, setSelectedReflectionId] = useState<
       string | null
@@ -51,20 +51,19 @@ export default function ReflectionsPage() {
       if (!currentUserId) return;
       setLoading(true);
       try {
-         const params: any = {};
+         const params: Record<string, string> = {};
          if (filterEmotion) params.emotion = filterEmotion;
          if (filterTag) params.tag = filterTag;
 
-         const res = await API.get(`/reflections/user/${currentUserId}`, {
-            params,
-         });
-         setReflections(res.data?.message?.reflections || []);
-      } catch (err: any) {
-         toast.error(
-            err.response?.data?.message ||
-               err.message ||
-               "Failed to fetch reflections"
+         const res = await API.get<{ message: { reflections: Reflection[] } }>(
+            `/reflections/user/${currentUserId}`,
+            { params }
          );
+         setReflections(res.data.message.reflections || []);
+      } catch (err: unknown) {
+         const msg =
+            err instanceof Error ? err.message : "Failed to fetch reflections";
+         toast.error(msg);
       } finally {
          setLoading(false);
       }
@@ -88,12 +87,10 @@ export default function ReflectionsPage() {
          setReflections((prev) =>
             prev.filter((r) => r._id !== selectedReflectionId)
          );
-      } catch (err: any) {
-         toast.error(
-            err.response?.data?.message ||
-               err.message ||
-               "Failed to delete reflection"
-         );
+      } catch (err: unknown) {
+         const msg =
+            err instanceof Error ? err.message : "Failed to delete reflection";
+         toast.error(msg);
       } finally {
          setConfirmOpen(false);
          setSelectedReflectionId(null);
@@ -114,10 +111,11 @@ export default function ReflectionsPage() {
       if (newReflection) {
          setReflections((prev) => {
             const exists = prev.find((r) => r._id === newReflection._id);
-            if (exists)
+            if (exists) {
                return prev.map((r) =>
                   r._id === newReflection._id ? newReflection : r
                );
+            }
             return [newReflection, ...prev];
          });
       } else {
@@ -206,9 +204,9 @@ export default function ReflectionsPage() {
                         title: editingReflection?.title || "",
                         content: editingReflection?.content || "",
                         emotion: allowedEmotions.includes(
-                           editingReflection?.emotion as any
+                           editingReflection?.emotion as Emotion
                         )
-                           ? (editingReflection?.emotion as (typeof allowedEmotions)[number])
+                           ? (editingReflection?.emotion as Emotion)
                            : undefined,
                         tags: editingReflection?.tags?.join(",") || "",
                      }}
@@ -234,7 +232,7 @@ export default function ReflectionsPage() {
                <Clock className="w-10 h-10 animate-pulse text-purple-400" />
                <p className="text-lg font-medium">No reflections yet</p>
                <p className="text-sm">
-                  Click "Add Reflection" to create your first one.
+                  Click &quot;Add Reflection&quot; to create your first one.
                </p>
             </motion.div>
          ) : (
