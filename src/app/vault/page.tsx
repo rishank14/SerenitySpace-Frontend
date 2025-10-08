@@ -33,17 +33,20 @@ export default function VaultPage() {
       setLoading(true);
       try {
          const [upcomingRes, deliveredRes] = await Promise.all([
-            API.get(`/message-vault/upcoming/${userId}`),
-            API.get(`/message-vault/delivered/${userId}`),
+            API.get<{ message: { messages: Vault[] } }>(
+               `/message-vault/upcoming/${userId}`
+            ),
+            API.get<{ message: { messages: Vault[] } }>(
+               `/message-vault/delivered/${userId}`
+            ),
          ]);
-         setUpcoming(upcomingRes.data?.message?.messages || []);
-         setDelivered(deliveredRes.data?.message?.messages || []);
-      } catch (err: any) {
-         toast.error(
-            err.response?.data?.message ||
-               err.message ||
-               "Failed to fetch vaults"
-         );
+
+         setUpcoming(upcomingRes.data.message.messages || []);
+         setDelivered(deliveredRes.data.message.messages || []);
+      } catch (err: unknown) {
+         const message =
+            err instanceof Error ? err.message : "Failed to fetch vaults";
+         toast.error(message);
       } finally {
          setLoading(false);
       }
@@ -127,12 +130,10 @@ export default function VaultPage() {
          setDelivered((prev) => prev.filter((v) => v._id !== selectedVaultId));
          setHighlighted((prev) => prev.filter((id) => id !== selectedVaultId));
          toast.success("Vault deleted");
-      } catch (err: any) {
-         toast.error(
-            err.response?.data?.message ||
-               err.message ||
-               "Failed to delete vault"
-         );
+      } catch (err: unknown) {
+         const message =
+            err instanceof Error ? err.message : "Failed to delete vault";
+         toast.error(message);
       } finally {
          setConfirmOpen(false);
          setSelectedVaultId(null);

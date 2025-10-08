@@ -68,9 +68,9 @@ export default function AuthForm({ type }: AuthFormProps) {
          }
 
          router.replace("/dashboard");
-      } catch (err: any) {
-         // Display backend message in form
-         setFormError(err.message || "Something went wrong");
+      } catch (err: unknown) {
+         if (err instanceof Error) setFormError(err.message);
+         else setFormError("Something went wrong");
       } finally {
          setLoading(false);
       }

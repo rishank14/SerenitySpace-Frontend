@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useForm, FieldValues } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ import {
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import API from "@/lib/axios";
+import { Vault } from "@/components/vault/VaultCard";
 
 // Get current IST + 1min in datetime-local format
 const getISTPlus1Min = (): string => {
@@ -57,7 +58,7 @@ interface VaultFormValues {
 interface VaultFormProps {
    vaultId?: string;
    defaultValues?: VaultFormValues;
-   onSuccess: (vault?: unknown) => void;
+   onSuccess: (vault?: Vault) => void;
    onCancel: () => void;
 }
 
@@ -124,24 +125,27 @@ export default function VaultForm({
          };
 
          const res = vaultId
-            ? await API.patch(`/message-vault/update/${vaultId}`, payload, {
-                 headers: { Authorization: `Bearer ${token}` },
-              })
-            : await API.post(`/message-vault/create`, payload, {
-                 headers: { Authorization: `Bearer ${token}` },
-              });
+            ? await API.patch<{ message: Vault[] }>(
+                 `/message-vault/update/${vaultId}`,
+                 payload,
+                 { headers: { Authorization: `Bearer ${token}` } }
+              )
+            : await API.post<{ message: Vault[] }>(
+                 `/message-vault/create`,
+                 payload,
+                 {
+                    headers: { Authorization: `Bearer ${token}` },
+                 }
+              );
 
          toast.success(vaultId ? "Vault updated" : "Vault created");
 
-         onSuccess(
-            res.data.message?.messages?.[0] || res.data.message || res.data.data
-         );
+         // Safely pass the first Vault returned
+         onSuccess(res.data.message?.[0]);
       } catch (err: unknown) {
-         if (err instanceof Error) {
-            toast.error(err.message);
-         } else {
-            toast.error("Failed to submit vault");
-         }
+         const message =
+            err instanceof Error ? err.message : "Failed to submit vault";
+         toast.error(message);
       } finally {
          setLoading(false);
       }
