@@ -29,7 +29,7 @@ interface VentFormValues {
 interface VentFormProps {
    ventId?: string;
    defaultValues?: Partial<VentFormValues>;
-   onSuccess: (newVent?: any) => void;
+   onSuccess: (newVent?: unknown) => void;
    onCancel: () => void;
 }
 
@@ -69,14 +69,14 @@ export default function VentForm({
          toast.success(
             ventId ? "Vent updated successfully!" : "Vent created successfully!"
          );
-         onSuccess(res.data?.message);
+         onSuccess(res.data?.message || res.data?.data);
          form.reset(values);
-      } catch (err: any) {
-         toast.error(
-            err.response?.data?.message ||
-               err.message ||
-               "Failed to submit vent"
-         );
+      } catch (err: unknown) {
+         if (err instanceof Error) {
+            toast.error(err.message);
+         } else {
+            toast.error("Failed to submit vent");
+         }
       } finally {
          setLoading(false);
       }

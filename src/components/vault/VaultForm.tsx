@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, FieldValues } from "react-hook-form";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +19,7 @@ import { Loader2 } from "lucide-react";
 import API from "@/lib/axios";
 
 // Get current IST + 1min in datetime-local format
-const getISTPlus1Min = () => {
+const getISTPlus1Min = (): string => {
    const now = new Date();
    const ist = new Date(
       now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
@@ -31,7 +31,7 @@ const getISTPlus1Min = () => {
 };
 
 // Convert UTC from backend → IST datetime-local
-const convertUTCtoIST = (utcStr?: string) => {
+const convertUTCtoIST = (utcStr?: string): string => {
    if (!utcStr) return getISTPlus1Min();
    const utcDate = new Date(utcStr);
    const istStr = utcDate.toLocaleString("en-US", {
@@ -49,10 +49,15 @@ const convertUTCtoIST = (utcStr?: string) => {
    return `${year}-${month}-${day}T${hour}:${minute}`;
 };
 
+interface VaultFormValues {
+   message: string;
+   deliverAt: string;
+}
+
 interface VaultFormProps {
    vaultId?: string;
-   defaultValues?: { message: string; deliverAt: string };
-   onSuccess: (vault?: any) => void;
+   defaultValues?: VaultFormValues;
+   onSuccess: (vault?: unknown) => void;
    onCancel: () => void;
 }
 
@@ -67,7 +72,7 @@ export default function VaultForm({
 
    const minDeliverAt = useMemo(() => getISTPlus1Min(), []);
 
-   const form = useForm({
+   const form = useForm<VaultFormValues>({
       defaultValues: {
          message: defaultValues?.message || "",
          deliverAt: defaultValues?.deliverAt
@@ -92,7 +97,7 @@ export default function VaultForm({
       );
    };
 
-   const onSubmit = async (values: any) => {
+   const onSubmit = async (values: VaultFormValues) => {
       if (!values.deliverAt) {
          toast.error("Please select a deliver time.");
          return;
@@ -131,12 +136,12 @@ export default function VaultForm({
          onSuccess(
             res.data.message?.messages?.[0] || res.data.message || res.data.data
          );
-      } catch (err: any) {
-         toast.error(
-            err.response?.data?.message ||
-               err.message ||
-               "Failed to submit vault"
-         );
+      } catch (err: unknown) {
+         if (err instanceof Error) {
+            toast.error(err.message);
+         } else {
+            toast.error("Failed to submit vault");
+         }
       } finally {
          setLoading(false);
       }

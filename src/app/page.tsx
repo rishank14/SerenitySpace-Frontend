@@ -1,14 +1,5 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-   Heart,
-   ArrowRight,
-   Shield,
-   Users,
-} from "lucide-react";
-import Link from "next/link";
 import {TestimonialsSection} from "@/components/landing-page/TestimonialsSection";
 import { HeroSection } from "@/components/landing-page/HeroSection";
 import { FeaturesSection } from "@/components/landing-page/FeaturesSection";

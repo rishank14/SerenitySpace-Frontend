@@ -10,7 +10,7 @@ import {
 import API from "@/lib/axios";
 import { toast } from "sonner";
 
-interface User {
+export interface User {
    _id: string;
    username: string;
    email: string;
@@ -31,7 +31,11 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
+interface AuthProviderProps {
+   children: ReactNode;
+}
+
+export const AuthProvider = ({ children }: AuthProviderProps) => {
    const [user, setUser] = useState<User | null>(null);
    const [loading, setLoading] = useState(true);
    const [authLoading, setAuthLoading] = useState(false);
@@ -49,14 +53,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             : { username: identifier, password };
 
          const res = await API.post("/users/login", body);
-         const { accessToken, user } = res.data.message;
+         const data = res.data.message;
 
-         localStorage.setItem("accessToken", accessToken);
-         setUser(user);
+         localStorage.setItem("accessToken", data.accessToken);
+         setUser(data.user as User);
          toast.success("Logged in successfully!");
-      } catch (err: any) {
-         const msg = err.response?.data?.message || "Invalid credentials";
-         throw new Error(msg); // <-- important: propagate backend message
+      } catch (err: unknown) {
+         let msg = "Invalid credentials";
+         if (err instanceof Error) msg = err.message;
+         else if (
+            typeof err === "object" &&
+            err !== null &&
+            "response" in err &&
+            (err as any).response?.data?.message
+         ) {
+            msg = (err as any).response.data.message;
+         }
+         throw new Error(msg);
       } finally {
          setAuthLoading(false);
       }
@@ -70,13 +83,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             email,
             password,
          });
-         const { accessToken, user } = res.data.message;
+         const data = res.data.message;
 
-         localStorage.setItem("accessToken", accessToken);
-         setUser(user);
+         localStorage.setItem("accessToken", data.accessToken);
+         setUser(data.user as User);
          toast.success("Account created successfully!");
-      } catch (err: any) {
-         const msg = err.response?.data?.message || "Signup failed";
+      } catch (err: unknown) {
+         let msg = "Signup failed";
+         if (err instanceof Error) msg = err.message;
+         else if (
+            typeof err === "object" &&
+            err !== null &&
+            "response" in err &&
+            (err as any).response?.data?.message
+         ) {
+            msg = (err as any).response.data.message;
+         }
          throw new Error(msg);
       } finally {
          setAuthLoading(false);
@@ -99,7 +121,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(null);
       try {
          const res = await API.get("/users/current-user");
-         setUser(res.data.message);
+         setUser(res.data.message as User);
       } catch {
          localStorage.removeItem("accessToken");
       }
@@ -123,7 +145,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
    );
 };
 
-export const useAuth = () => {
+export const useAuth = (): AuthContextType => {
    const context = useContext(AuthContext);
    if (!context) throw new Error("useAuth must be used within AuthProvider");
    return context;
