@@ -58,7 +58,7 @@ interface VaultFormValues {
 interface VaultFormProps {
    vaultId?: string;
    defaultValues?: VaultFormValues;
-   onSuccess: (vault?: Vault) => void;
+   onSuccess: (vault: Vault) => void;
    onCancel: () => void;
 }
 
@@ -124,24 +124,27 @@ export default function VaultForm({
             deliverAt: new Date(values.deliverAt).toISOString(),
          };
 
-         const res = vaultId
-            ? await API.patch<{ message: Vault[] }>(
-                 `/message-vault/update/${vaultId}`,
-                 payload,
-                 { headers: { Authorization: `Bearer ${token}` } }
-              )
-            : await API.post<{ message: Vault[] }>(
-                 `/message-vault/create`,
-                 payload,
-                 {
-                    headers: { Authorization: `Bearer ${token}` },
-                 }
-              );
+         let res;
+         if (vaultId) {
+            // Update existing vault
+            res = await API.patch<{ message: Vault }>(
+               `/message-vault/update/${vaultId}`,
+               payload,
+               { headers: { Authorization: `Bearer ${token}` } }
+            );
+         } else {
+            // Create new vault
+            res = await API.post<{ message: Vault }>(
+               `/message-vault/create`,
+               payload,
+               { headers: { Authorization: `Bearer ${token}` } }
+            );
+         }
 
          toast.success(vaultId ? "Vault updated" : "Vault created");
 
-         // Safely pass the first Vault returned
-         onSuccess(res.data.message?.[0]);
+         // Pass the single created/updated Vault object to parent
+         onSuccess(res.data.message);
       } catch (err: unknown) {
          const message =
             err instanceof Error ? err.message : "Failed to submit vault";

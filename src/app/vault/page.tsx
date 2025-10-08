@@ -23,31 +23,35 @@ export default function VaultPage() {
    const [confirmOpen, setConfirmOpen] = useState(false);
    const [selectedVaultId, setSelectedVaultId] = useState<string | null>(null);
 
-   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+   const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
    const userId =
       typeof window !== "undefined" ? localStorage.getItem("userId") : null;
 
+   /** Fetch vaults from backend */
    const fetchVaults = useCallback(async () => {
       if (!userId) return;
       setLoading(true);
       try {
          const [upcomingRes, deliveredRes] = await Promise.all([
-            API.get(`/message-vault/upcoming/${userId}`),
-            API.get(`/message-vault/delivered/${userId}`),
+            API.get<{ message: { messages: Vault[] } }>(
+               `/message-vault/upcoming/${userId}`
+            ),
+            API.get<{ message: { messages: Vault[] } }>(
+               `/message-vault/delivered/${userId}`
+            ),
          ]);
-         setUpcoming(upcomingRes.data?.message?.messages || []);
-         setDelivered(deliveredRes.data?.message?.messages || []);
-      } catch (err: any) {
-         toast.error(
-            err.response?.data?.message ||
-               err.message ||
-               "Failed to fetch vaults"
-         );
+         setUpcoming(upcomingRes.data.message?.messages || []);
+         setDelivered(deliveredRes.data.message?.messages || []);
+      } catch (err) {
+         const message =
+            err instanceof Error ? err.message : "Failed to fetch vaults";
+         toast.error(message);
       } finally {
          setLoading(false);
       }
    }, [userId]);
 
+   /** Deliver vaults with highlight and toast */
    const deliverVaults = useCallback((vaults: Vault[]) => {
       if (!vaults.length) return;
 
@@ -56,7 +60,7 @@ export default function VaultPage() {
 
       setTimeout(() => {
          setHighlighted((prev) =>
-            prev.filter((id) => !vaults.map((v) => v._id).includes(id))
+            prev.filter((id) => !vaults.some((v) => v._id === id))
          );
       }, 3000);
 
@@ -71,10 +75,11 @@ export default function VaultPage() {
       );
    }, []);
 
+   /** Socket + auto-delivery */
    useEffect(() => {
       if (!userId) return;
 
-      const socket: Socket = io((baseUrl || "").replace("/api/v1", ""));
+      const socket: Socket = io(baseUrl.replace("/api/v1", ""));
       socket.emit("register", userId);
 
       const onVaultDelivered = (vault: Vault) => {
@@ -110,6 +115,7 @@ export default function VaultPage() {
       };
    }, [baseUrl, userId, deliverVaults, fetchVaults]);
 
+   /** Delete vault */
    const confirmDelete = useCallback((id: string) => {
       setSelectedVaultId(id);
       setConfirmOpen(true);
@@ -123,47 +129,44 @@ export default function VaultPage() {
          setDelivered((prev) => prev.filter((v) => v._id !== selectedVaultId));
          setHighlighted((prev) => prev.filter((id) => id !== selectedVaultId));
          toast.success("Vault deleted");
-      } catch (err: any) {
-         toast.error(
-            err.response?.data?.message ||
-               err.message ||
-               "Failed to delete vault"
-         );
+      } catch (err) {
+         const message =
+            err instanceof Error ? err.message : "Failed to delete vault";
+         toast.error(message);
       } finally {
          setConfirmOpen(false);
          setSelectedVaultId(null);
       }
    }, [selectedVaultId]);
 
+   /** Edit vault */
    const handleEdit = useCallback((vault: Vault) => {
       setEditingVault(vault);
       setShowForm(true);
    }, []);
 
+   /** VaultForm success */
    const handleFormSuccess = useCallback(
-      (newVault?: Vault) => {
+      (newVault: Vault) => {
          setShowForm(false);
          setEditingVault(null);
          if (!newVault) return;
 
          const now = new Date();
-         const deliverAt = new Date(newVault.deliverAt);
+         const isDelivered = new Date(newVault.deliverAt) <= now;
 
-         // Always add/update in upcoming
-         setUpcoming((prev) => {
-            const exists = prev.find((v) => v._id === newVault._id);
-            if (exists)
-               return prev.map((v) => (v._id === newVault._id ? newVault : v));
-            return [newVault, ...prev];
-         });
-
-         // Remove from delivered just in case
-         setDelivered((prev) => prev.filter((v) => v._id !== newVault._id));
-
-         // If it's already due, deliver
-         if (deliverAt <= now) {
+         if (isDelivered) {
             deliverVaults([newVault]);
-            setUpcoming((prev) => prev.filter((v) => v._id !== newVault._id));
+         } else {
+            setUpcoming((prev) => {
+               const exists = prev.find((v) => v._id === newVault._id);
+               if (exists)
+                  return prev.map((v) =>
+                     v._id === newVault._id ? newVault : v
+                  );
+               return [newVault, ...prev];
+            });
+            setDelivered((prev) => prev.filter((v) => v._id !== newVault._id));
          }
       },
       [deliverVaults]
@@ -261,6 +264,7 @@ export default function VaultPage() {
    );
 }
 
+// Vault Section Component
 interface VaultSectionProps {
    title: string;
    color: "purple" | "green";
