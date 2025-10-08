@@ -105,7 +105,7 @@ export function TestimonialsSection() {
                            whileInView={{ opacity: 1, y: 0 }}
                            transition={{ duration: 0.5, delay: 0.1 }}
                         >
-                           "{t.text}"
+                           {t.text}
                         </motion.p>
 
                         <motion.div

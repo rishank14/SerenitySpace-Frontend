@@ -30,9 +30,7 @@ const steps: Step[] = [
    },
 ];
 
-interface HowItWorksSectionProps {}
-
-export const HowItWorksSection: React.FC<HowItWorksSectionProps> = () => {
+export const HowItWorksSection: React.FC = () => {
    const container = {
       hidden: {},
       show: { transition: { staggerChildren: 0.15 } },

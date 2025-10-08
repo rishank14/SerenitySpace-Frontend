@@ -20,6 +20,16 @@ import API from "@/lib/axios";
 export type Mood = "sad" | "angry" | "anxious" | "happy" | "neutral";
 export type Visibility = "public" | "private";
 
+export interface Vent {
+   _id: string;
+   message: string;
+   mood: Mood;
+   visibility: Visibility;
+   userId: string;
+   createdAt: string;
+   updatedAt: string;
+}
+
 interface VentFormValues {
    message: string;
    mood: Mood;
@@ -29,7 +39,7 @@ interface VentFormValues {
 interface VentFormProps {
    ventId?: string;
    defaultValues?: Partial<VentFormValues>;
-   onSuccess: (newVent?: unknown) => void;
+   onSuccess: (newVent?: Vent) => void; // ✅ type-safe
    onCancel: () => void;
 }
 
@@ -63,17 +73,28 @@ export default function VentForm({
       setLoading(true);
       try {
          const res = ventId
-            ? await API.patch(`/vents/update/${ventId}`, values)
-            : await API.post("/vents/create", values);
+            ? await API.patch<{ message: Vent }>(
+                 `/vents/update/${ventId}`,
+                 values
+              )
+            : await API.post<{ message: Vent }>("/vents/create", values);
 
          toast.success(
             ventId ? "Vent updated successfully!" : "Vent created successfully!"
          );
-         onSuccess(res.data?.message || res.data?.data);
+
+         onSuccess(res.data.message); // ✅ type-safe
          form.reset(values);
       } catch (err: unknown) {
          if (err instanceof Error) {
             toast.error(err.message);
+         } else if (
+            typeof err === "object" &&
+            err !== null &&
+            "response" in err &&
+            (err as any).response?.data?.message
+         ) {
+            toast.error((err as any).response.data.message);
          } else {
             toast.error("Failed to submit vent");
          }

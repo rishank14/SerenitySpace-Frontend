@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import API from "@/lib/axios";
 import { toast } from "sonner";
+import { AxiosError } from "axios";
 
 import {
    Dialog,
@@ -64,21 +65,19 @@ export default function ChangePasswordModal({
    const onSubmit = async (values: ChangePasswordInput) => {
       setLoading(true);
       try {
-         const res = await API.post("/users/change-password", values);
+         const res = await API.post<{ data: string }>(
+            "/users/change-password",
+            values
+         );
          toast.success(res.data.data || "Password changed successfully");
          setOpen(false);
       } catch (err: unknown) {
-         if (err instanceof Error) {
-            // Generic Error
+         // Axios type guard
+         const axiosErr = err as AxiosError<{ message?: string }>;
+         if (axiosErr?.isAxiosError) {
+            toast.error(axiosErr.response?.data?.message || axiosErr.message);
+         } else if (err instanceof Error) {
             toast.error(err.message);
-         } else if (
-            typeof err === "object" &&
-            err !== null &&
-            "response" in err &&
-            (err as any).response?.data?.message
-         ) {
-            // Axios error shape
-            toast.error((err as any).response.data.message);
          } else {
             toast.error("Password change failed");
          }
@@ -139,7 +138,7 @@ export default function ChangePasswordModal({
                   <DialogFooter>
                      <Button
                         type="submit"
-                        disabled={loading || !form.formState.isDirty} // disable if loading or no changes
+                        disabled={loading || !form.formState.isDirty}
                         className="w-full"
                      >
                         {loading ? "Changing..." : "Change Password"}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm, FieldValues } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import API from "@/lib/axios";
 import { Button } from "@/components/ui/button";

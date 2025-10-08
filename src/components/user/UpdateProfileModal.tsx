@@ -7,6 +7,7 @@ import { z } from "zod";
 import API from "@/lib/axios";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
+import { AxiosError } from "axios";
 
 import {
    Dialog,
@@ -26,6 +27,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
+// Zod schema for form validation
 const updateProfileSchema = z.object({
    username: z.string().min(3, "Username must be at least 3 characters"),
    email: z.string().email("Invalid email"),
@@ -54,7 +56,7 @@ export default function UpdateProfileModal({
       },
    });
 
-   // Populate form with fresh user values when modal opens
+   // Populate form when modal opens
    useEffect(() => {
       if (open && user) {
          form.reset({
@@ -72,22 +74,20 @@ export default function UpdateProfileModal({
    const onSubmit = async (values: UpdateProfileInput) => {
       setLoading(true);
       try {
-         const res = await API.patch("/users/update-profile", values);
+         const res = await API.patch<{ data: string }>(
+            "/users/update-profile",
+            values
+         );
          toast.success(res.data.data || "Profile updated");
          await refreshUser();
          setOpen(false);
       } catch (err: unknown) {
-         if (err instanceof Error) {
-            // Handles generic Error
+         // Type guard for AxiosError
+         const axiosErr = err as AxiosError<{ message?: string }>;
+         if (axiosErr?.isAxiosError) {
+            toast.error(axiosErr.response?.data?.message || axiosErr.message);
+         } else if (err instanceof Error) {
             toast.error(err.message);
-         } else if (
-            typeof err === "object" &&
-            err !== null &&
-            "response" in err &&
-            (err as any).response?.data?.message
-         ) {
-            // Handles AxiosError shape
-            toast.error((err as any).response.data.message);
          } else {
             toast.error("Update failed");
          }
@@ -109,6 +109,7 @@ export default function UpdateProfileModal({
                   className="space-y-4 mt-2"
                   noValidate
                >
+                  {/* Username */}
                   <FormField
                      control={form.control}
                      name="username"
@@ -127,6 +128,8 @@ export default function UpdateProfileModal({
                         </FormItem>
                      )}
                   />
+
+                  {/* Email */}
                   <FormField
                      control={form.control}
                      name="email"
@@ -148,7 +151,7 @@ export default function UpdateProfileModal({
                   <DialogFooter>
                      <Button
                         type="submit"
-                        disabled={loading || !form.formState.isDirty} // disable if loading or no changes
+                        disabled={loading || !form.formState.isDirty}
                         className="w-full"
                      >
                         {loading ? "Updating..." : "Update"}

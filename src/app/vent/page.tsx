@@ -16,6 +16,7 @@ import {
    SelectValue,
 } from "@/components/ui/select";
 import API from "@/lib/axios";
+import { AxiosError } from "axios";
 
 const allowedMoods: Mood[] = ["happy", "sad", "angry", "anxious", "neutral"];
 
@@ -30,36 +31,50 @@ export default function VentPage() {
    const [selectedVentId, setSelectedVentId] = useState<string | null>(null);
 
    const formRef = useRef<HTMLDivElement>(null);
+
    const currentUserId =
       typeof window !== "undefined"
          ? localStorage.getItem("userId") ?? undefined
          : undefined;
 
-   const fetchVents = async () => {
-      setLoading(true);
-      try {
-         let url =
-            showMyVents && currentUserId
-               ? `/vents/user/${currentUserId}`
-               : "/vents";
-         const params: any = {};
-         if (filterMood) params.mood = filterMood;
-         const res = await API.get(url, { params });
-         setVents(res.data?.message?.vents || []);
-      } catch (err: any) {
-         toast.error(
-            err.response?.data?.message ||
-               err.message ||
-               "Failed to fetch vents"
-         );
-      } finally {
-         setLoading(false);
+   // Helper: Axios error handling
+   const handleApiError = (err: unknown, fallbackMessage: string) => {
+      if (err instanceof AxiosError) {
+         toast.error(err.response?.data?.message || err.message);
+      } else if (err instanceof Error) {
+         toast.error(err.message);
+      } else {
+         toast.error(fallbackMessage);
       }
    };
 
+   // Fetch vents
    useEffect(() => {
+      const fetchVents = async () => {
+         setLoading(true);
+         try {
+            const url =
+               showMyVents && currentUserId
+                  ? `/vents/user/${currentUserId}`
+                  : "/vents";
+
+            const params: Record<string, string> = {};
+            if (filterMood) params.mood = filterMood;
+
+            const res = await API.get<{ message: { vents: Vent[] } }>(url, {
+               params,
+            });
+
+            setVents(res.data?.message?.vents || []);
+         } catch (err: unknown) {
+            handleApiError(err, "Failed to fetch vents");
+         } finally {
+            setLoading(false);
+         }
+      };
+
       fetchVents();
-   }, [filterMood, showMyVents]);
+   }, [filterMood, showMyVents, currentUserId]);
 
    const handleEdit = (vent: Vent) => {
       setEditingVent(vent);
@@ -82,7 +97,32 @@ export default function VentPage() {
                return prev.map((v) => (v._id === newVent._id ? newVent : v));
             return [newVent, ...prev];
          });
-      } else fetchVents();
+      } else {
+         // refetch if no vent provided
+         const fetchVents = async () => {
+            setLoading(true);
+            try {
+               const url =
+                  showMyVents && currentUserId
+                     ? `/vents/user/${currentUserId}`
+                     : "/vents";
+
+               const params: Record<string, string> = {};
+               if (filterMood) params.mood = filterMood;
+
+               const res = await API.get<{ message: { vents: Vent[] } }>(url, {
+                  params,
+               });
+
+               setVents(res.data?.message?.vents || []);
+            } catch (err: unknown) {
+               handleApiError(err, "Failed to fetch vents");
+            } finally {
+               setLoading(false);
+            }
+         };
+         fetchVents();
+      }
    };
 
    const confirmDelete = (id: string) => {
@@ -96,8 +136,8 @@ export default function VentPage() {
          await API.delete(`/vents/delete/${selectedVentId}`);
          toast.success("Vent deleted");
          setVents((prev) => prev.filter((v) => v._id !== selectedVentId));
-      } catch (err: any) {
-         toast.error(err.response?.data?.message || "Failed to delete vent");
+      } catch (err: unknown) {
+         handleApiError(err, "Failed to delete vent");
       } finally {
          setConfirmOpen(false);
          setSelectedVentId(null);
