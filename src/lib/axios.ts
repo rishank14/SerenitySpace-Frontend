@@ -20,7 +20,7 @@ const API = axios.create({
 });
 
 // Type guard for AxiosError
-function isAxiosError<T = any>(err: unknown): err is AxiosError<T> {
+function isAxiosError<T = unknown>(err: unknown): err is AxiosError<T> {
   return (err as AxiosError<T>).isAxiosError !== undefined;
 }
 

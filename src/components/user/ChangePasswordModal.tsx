@@ -67,8 +67,21 @@ export default function ChangePasswordModal({
          const res = await API.post("/users/change-password", values);
          toast.success(res.data.data || "Password changed successfully");
          setOpen(false);
-      } catch (err: any) {
-         toast.error(err.response?.data?.message || "Password change failed");
+      } catch (err: unknown) {
+         if (err instanceof Error) {
+            // Generic Error
+            toast.error(err.message);
+         } else if (
+            typeof err === "object" &&
+            err !== null &&
+            "response" in err &&
+            (err as any).response?.data?.message
+         ) {
+            // Axios error shape
+            toast.error((err as any).response.data.message);
+         } else {
+            toast.error("Password change failed");
+         }
       } finally {
          setLoading(false);
       }

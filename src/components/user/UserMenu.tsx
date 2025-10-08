@@ -8,7 +8,6 @@ import {
    DropdownMenuItem,
    DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
 import { LogOut, User as UserIcon, Key, Trash2 } from "lucide-react";
 import UpdateProfileModal from "./UpdateProfileModal";
 import ChangePasswordModal from "./ChangePasswordModal";
@@ -17,9 +16,10 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import API from "@/lib/axios";
 import { motion } from "framer-motion";
+import { AxiosError } from "axios";
 
 export default function UserMenu() {
-   const { user, logout, refreshUser } = useAuth();
+   const { user, logout } = useAuth(); // removed refreshUser
    const [openUpdate, setOpenUpdate] = useState(false);
    const [openPassword, setOpenPassword] = useState(false);
    const [openDelete, setOpenDelete] = useState(false);
@@ -45,8 +45,16 @@ export default function UserMenu() {
          toast.success("Account deleted successfully");
          await logout();
          router.push("/sign-in");
-      } catch (err: any) {
-         toast.error(err.response?.data?.message || "Failed to delete account");
+      } catch (err: unknown) {
+         if (err instanceof AxiosError) {
+            toast.error(
+               err.response?.data?.message || "Failed to delete account"
+            );
+         } else if (err instanceof Error) {
+            toast.error(err.message);
+         } else {
+            toast.error("Failed to delete account");
+         }
       } finally {
          setOpenDelete(false);
       }

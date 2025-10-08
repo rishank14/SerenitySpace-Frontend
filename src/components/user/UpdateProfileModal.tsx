@@ -76,8 +76,21 @@ export default function UpdateProfileModal({
          toast.success(res.data.data || "Profile updated");
          await refreshUser();
          setOpen(false);
-      } catch (err: any) {
-         toast.error(err.response?.data?.message || "Update failed");
+      } catch (err: unknown) {
+         if (err instanceof Error) {
+            // Handles generic Error
+            toast.error(err.message);
+         } else if (
+            typeof err === "object" &&
+            err !== null &&
+            "response" in err &&
+            (err as any).response?.data?.message
+         ) {
+            // Handles AxiosError shape
+            toast.error((err as any).response.data.message);
+         } else {
+            toast.error("Update failed");
+         }
       } finally {
          setLoading(false);
       }
