@@ -27,32 +27,27 @@ export default function VaultPage() {
    const userId =
       typeof window !== "undefined" ? localStorage.getItem("userId") : null;
 
-   /** Fetch vaults from backend */
    const fetchVaults = useCallback(async () => {
       if (!userId) return;
       setLoading(true);
       try {
          const [upcomingRes, deliveredRes] = await Promise.all([
-            API.get<{ message: { messages: Vault[] } }>(
-               `/message-vault/upcoming/${userId}`
-            ),
-            API.get<{ message: { messages: Vault[] } }>(
-               `/message-vault/delivered/${userId}`
-            ),
+            API.get(`/message-vault/upcoming/${userId}`),
+            API.get(`/message-vault/delivered/${userId}`),
          ]);
-
-         setUpcoming(upcomingRes.data.message.messages || []);
-         setDelivered(deliveredRes.data.message.messages || []);
-      } catch (err: unknown) {
-         const message =
-            err instanceof Error ? err.message : "Failed to fetch vaults";
-         toast.error(message);
+         setUpcoming(upcomingRes.data?.message?.messages || []);
+         setDelivered(deliveredRes.data?.message?.messages || []);
+      } catch (err: any) {
+         toast.error(
+            err.response?.data?.message ||
+               err.message ||
+               "Failed to fetch vaults"
+         );
       } finally {
          setLoading(false);
       }
    }, [userId]);
 
-   /** Deliver vaults with highlight and toast */
    const deliverVaults = useCallback((vaults: Vault[]) => {
       if (!vaults.length) return;
 
@@ -76,7 +71,6 @@ export default function VaultPage() {
       );
    }, []);
 
-   /** Socket + auto-delivery */
    useEffect(() => {
       if (!userId) return;
 
@@ -116,7 +110,6 @@ export default function VaultPage() {
       };
    }, [baseUrl, userId, deliverVaults, fetchVaults]);
 
-   /** Delete vault */
    const confirmDelete = useCallback((id: string) => {
       setSelectedVaultId(id);
       setConfirmOpen(true);
@@ -130,23 +123,23 @@ export default function VaultPage() {
          setDelivered((prev) => prev.filter((v) => v._id !== selectedVaultId));
          setHighlighted((prev) => prev.filter((id) => id !== selectedVaultId));
          toast.success("Vault deleted");
-      } catch (err: unknown) {
-         const message =
-            err instanceof Error ? err.message : "Failed to delete vault";
-         toast.error(message);
+      } catch (err: any) {
+         toast.error(
+            err.response?.data?.message ||
+               err.message ||
+               "Failed to delete vault"
+         );
       } finally {
          setConfirmOpen(false);
          setSelectedVaultId(null);
       }
    }, [selectedVaultId]);
 
-   /** Edit vault */
    const handleEdit = useCallback((vault: Vault) => {
       setEditingVault(vault);
       setShowForm(true);
    }, []);
 
-   /** VaultForm success */
    const handleFormSuccess = useCallback(
       (newVault?: Vault) => {
          setShowForm(false);
@@ -154,19 +147,23 @@ export default function VaultPage() {
          if (!newVault) return;
 
          const now = new Date();
-         const isDelivered = new Date(newVault.deliverAt) <= now;
+         const deliverAt = new Date(newVault.deliverAt);
 
-         if (isDelivered) deliverVaults([newVault]);
-         else {
-            setUpcoming((prev) => {
-               const exists = prev.find((v) => v._id === newVault._id);
-               if (exists)
-                  return prev.map((v) =>
-                     v._id === newVault._id ? newVault : v
-                  );
-               return [newVault, ...prev];
-            });
-            setDelivered((prev) => prev.filter((v) => v._id !== newVault._id));
+         // Always add/update in upcoming
+         setUpcoming((prev) => {
+            const exists = prev.find((v) => v._id === newVault._id);
+            if (exists)
+               return prev.map((v) => (v._id === newVault._id ? newVault : v));
+            return [newVault, ...prev];
+         });
+
+         // Remove from delivered just in case
+         setDelivered((prev) => prev.filter((v) => v._id !== newVault._id));
+
+         // If it's already due, deliver
+         if (deliverAt <= now) {
+            deliverVaults([newVault]);
+            setUpcoming((prev) => prev.filter((v) => v._id !== newVault._id));
          }
       },
       [deliverVaults]
@@ -264,7 +261,6 @@ export default function VaultPage() {
    );
 }
 
-// Reusable Vault Section Component
 interface VaultSectionProps {
    title: string;
    color: "purple" | "green";

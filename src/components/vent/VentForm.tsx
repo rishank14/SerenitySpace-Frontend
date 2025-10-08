@@ -16,6 +16,7 @@ import {
 import { Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import API from "@/lib/axios";
+import { AxiosError } from "axios";
 
 export type Mood = "sad" | "angry" | "anxious" | "happy" | "neutral";
 export type Visibility = "public" | "private";
@@ -39,7 +40,7 @@ interface VentFormValues {
 interface VentFormProps {
    ventId?: string;
    defaultValues?: Partial<VentFormValues>;
-   onSuccess: (newVent?: Vent) => void; // ✅ type-safe
+   onSuccess: (newVent?: Vent) => void;
    onCancel: () => void;
 }
 
@@ -83,18 +84,13 @@ export default function VentForm({
             ventId ? "Vent updated successfully!" : "Vent created successfully!"
          );
 
-         onSuccess(res.data.message); // ✅ type-safe
+         onSuccess(res.data.message);
          form.reset(values);
       } catch (err: unknown) {
          if (err instanceof Error) {
             toast.error(err.message);
-         } else if (
-            typeof err === "object" &&
-            err !== null &&
-            "response" in err &&
-            (err as any).response?.data?.message
-         ) {
-            toast.error((err as any).response.data.message);
+         } else if (err instanceof AxiosError && err.response?.data?.message) {
+            toast.error(err.response.data.message);
          } else {
             toast.error("Failed to submit vent");
          }

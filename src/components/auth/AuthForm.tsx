@@ -23,6 +23,7 @@ import {
    FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import PasswordInput from "@/components/ui/password-input"; // ✅ imported
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 
@@ -159,6 +160,7 @@ export default function AuthForm({ type }: AuthFormProps) {
                   />
                )}
 
+               {/* ✅ Password field replaced with PasswordInput */}
                <FormField
                   control={form.control}
                   name="password"
@@ -166,11 +168,7 @@ export default function AuthForm({ type }: AuthFormProps) {
                      <FormItem>
                         <FormLabel>Password</FormLabel>
                         <FormControl>
-                           <Input
-                              type="password"
-                              placeholder="••••••••"
-                              {...field}
-                           />
+                           <PasswordInput placeholder="••••••••" {...field} />
                         </FormControl>
                         <FormMessage />
                      </FormItem>
