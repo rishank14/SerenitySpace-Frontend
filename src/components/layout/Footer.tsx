@@ -34,7 +34,7 @@ export const Footer: React.FC = () => {
             {/* Bottom bar */}
             <div className="mt-8 pt-8 border-t border-border flex flex-col sm:flex-row justify-between items-center">
                <p className="text-sm text-muted-foreground">
-                  © 2025 SerenitySpace. All rights reserved.
+                  © 2026 SerenitySpace. Built by Rishank.
                </p>
                <div className="flex items-center space-x-4 mt-4 sm:mt-0">
                   <Badge variant="secondary" className="text-xs">

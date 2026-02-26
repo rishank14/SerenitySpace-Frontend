@@ -65,11 +65,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
          const res = await API.post<{ message: AuthResponse }>(
             "/users/login",
-            body
+            body,
          );
          const data = res.data.message;
 
          localStorage.setItem("accessToken", data.accessToken);
+         localStorage.setItem("userId", data.user._id);
          setUser(data.user);
          toast.success("Logged in successfully!");
       } catch (err: unknown) {
@@ -96,11 +97,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                username,
                email,
                password,
-            }
+            },
          );
          const data = res.data.message;
 
          localStorage.setItem("accessToken", data.accessToken);
+         localStorage.setItem("userId", data.user._id);
          setUser(data.user);
          toast.success("Account created successfully!");
       } catch (err: unknown) {
@@ -125,6 +127,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
          toast.error("Logout failed");
       } finally {
          localStorage.removeItem("accessToken");
+         localStorage.removeItem("userId");
          setUser(null);
          toast.success("Logged out successfully!");
       }
@@ -134,9 +137,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setUser(null);
       try {
          const res = await API.get<{ message: User }>("/users/current-user");
-         setUser(res.data.message);
+         const userData = res.data.message;
+         setUser(userData);
+         if (userData?._id) {
+            localStorage.setItem("userId", userData._id);
+         }
       } catch {
          localStorage.removeItem("accessToken");
+         localStorage.removeItem("userId");
       }
    };
 

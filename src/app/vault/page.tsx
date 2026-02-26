@@ -34,10 +34,10 @@ export default function VaultPage() {
       try {
          const [upcomingRes, deliveredRes] = await Promise.all([
             API.get<{ message: { messages: Vault[] } }>(
-               `/message-vault/upcoming/${userId}`
+               `/message-vault/upcoming/${userId}`,
             ),
             API.get<{ message: { messages: Vault[] } }>(
-               `/message-vault/delivered/${userId}`
+               `/message-vault/delivered/${userId}`,
             ),
          ]);
          setUpcoming(upcomingRes.data.message?.messages || []);
@@ -55,12 +55,18 @@ export default function VaultPage() {
    const deliverVaults = useCallback((vaults: Vault[]) => {
       if (!vaults.length) return;
 
-      setDelivered((prev) => [...vaults, ...prev]);
+      setDelivered((prev) => {
+         // Only add vaults that aren't already delivered
+         const newVaults = vaults.filter(
+            (v) => !prev.some((existing) => existing._id === v._id),
+         );
+         return [...newVaults, ...prev];
+      });
       setHighlighted((prev) => [...prev, ...vaults.map((v) => v._id)]);
 
       setTimeout(() => {
          setHighlighted((prev) =>
-            prev.filter((id) => !vaults.some((v) => v._id === id))
+            prev.filter((id) => !vaults.some((v) => v._id === id)),
          );
       }, 3000);
 
@@ -68,10 +74,10 @@ export default function VaultPage() {
          toast.success(`Delivered: "${v.message}"`, {
             description: `Delivered at ${formatDateTime(v.deliverAt).replace(
                /am|pm/i,
-               (m) => m.toUpperCase()
+               (m) => m.toUpperCase(),
             )}`,
             duration: 6000,
-         })
+         }),
       );
    }, []);
 
@@ -79,8 +85,9 @@ export default function VaultPage() {
    useEffect(() => {
       if (!userId) return;
 
-      const socket: Socket = io(baseUrl.replace("/api/v1", ""));
-      socket.emit("register", userId);
+      const socket: Socket = io(baseUrl.replace("/api/v1", ""), {
+         auth: { token: localStorage.getItem("accessToken") },
+      });
 
       const onVaultDelivered = (vault: Vault) => {
          setUpcoming((prev) => prev.filter((v) => v._id !== vault._id));
@@ -103,10 +110,14 @@ export default function VaultPage() {
                else stillUpcoming.push(v);
             });
 
-            deliverVaults(readyToDeliver);
+            // Deliver messages outside the state updater
+            if (readyToDeliver.length > 0) {
+               deliverVaults(readyToDeliver);
+            }
+
             return stillUpcoming;
          });
-      }, 60000);
+      }, 10000);
 
       return () => {
          socket.off("vaultDelivered", onVaultDelivered);
@@ -162,14 +173,14 @@ export default function VaultPage() {
                const exists = prev.find((v) => v._id === newVault._id);
                if (exists)
                   return prev.map((v) =>
-                     v._id === newVault._id ? newVault : v
+                     v._id === newVault._id ? newVault : v,
                   );
                return [newVault, ...prev];
             });
             setDelivered((prev) => prev.filter((v) => v._id !== newVault._id));
          }
       },
-      [deliverVaults]
+      [deliverVaults],
    );
 
    return (

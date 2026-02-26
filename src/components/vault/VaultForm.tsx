@@ -23,7 +23,7 @@ import { Vault } from "@/components/vault/VaultCard";
 const getISTPlus1Min = (): string => {
    const now = new Date();
    const ist = new Date(
-      now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+      now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }),
    );
    ist.setMinutes(ist.getMinutes() + 1);
    const offset = ist.getTimezoneOffset();
@@ -94,7 +94,7 @@ export default function VaultForm({
       setTimeWarning(
          selectedDate < now
             ? "⚠ Deliver time must be at least 1 minute in the future."
-            : ""
+            : "",
       );
    };
 
@@ -116,9 +116,6 @@ export default function VaultForm({
 
       setLoading(true);
       try {
-         const token = localStorage.getItem("token");
-         if (!token) throw new Error("User not authenticated");
-
          const payload = {
             message: values.message,
             deliverAt: new Date(values.deliverAt).toISOString(),
@@ -130,14 +127,12 @@ export default function VaultForm({
             res = await API.patch<{ message: Vault }>(
                `/message-vault/update/${vaultId}`,
                payload,
-               { headers: { Authorization: `Bearer ${token}` } }
             );
          } else {
             // Create new vault
             res = await API.post<{ message: Vault }>(
                `/message-vault/create`,
                payload,
-               { headers: { Authorization: `Bearer ${token}` } }
             );
          }
 
