@@ -27,8 +27,8 @@ import { Button } from "@/components/ui/button";
 import PasswordInput from "@/components/ui/password-input";
 
 const changePasswordSchema = z.object({
-   currentPassword: z.string().min(6, "Enter current password"),
-   newPassword: z.string().min(6, "New password must be at least 6 characters"),
+   currentPassword: z.string().min(1, "Enter current password"),
+   newPassword: z.string().min(8, "New password must be at least 8 characters"),
 });
 
 type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
@@ -67,7 +67,7 @@ export default function ChangePasswordModal({
       try {
          const res = await API.post<{ data: string }>(
             "/users/change-password",
-            values
+            values,
          );
          toast.success(res.data.data || "Password changed successfully");
          setOpen(false);

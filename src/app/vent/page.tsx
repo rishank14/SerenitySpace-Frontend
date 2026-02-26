@@ -34,7 +34,7 @@ export default function VentPage() {
 
    const currentUserId =
       typeof window !== "undefined"
-         ? localStorage.getItem("userId") ?? undefined
+         ? (localStorage.getItem("userId") ?? undefined)
          : undefined;
 
    // Helper: Axios error handling
@@ -61,11 +61,11 @@ export default function VentPage() {
             const params: Record<string, string> = {};
             if (filterMood) params.mood = filterMood;
 
-            const res = await API.get<{ message: { vents: Vent[] } }>(url, {
+            const res = await API.get<{ data: { vents: Vent[] } }>(url, {
                params,
             });
 
-            setVents(res.data?.message?.vents || []);
+            setVents(res.data?.data?.vents || []);
          } catch (err: unknown) {
             handleApiError(err, "Failed to fetch vents");
          } finally {
@@ -110,11 +110,11 @@ export default function VentPage() {
                const params: Record<string, string> = {};
                if (filterMood) params.mood = filterMood;
 
-               const res = await API.get<{ message: { vents: Vent[] } }>(url, {
+               const res = await API.get<{ data: { vents: Vent[] } }>(url, {
                   params,
                });
 
-               setVents(res.data?.message?.vents || []);
+               setVents(res.data?.data?.vents || []);
             } catch (err: unknown) {
                handleApiError(err, "Failed to fetch vents");
             } finally {

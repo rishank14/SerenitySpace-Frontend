@@ -36,7 +36,7 @@ const allowedEmotions = [
    "sad",
    "angry",
    "neutral",
-   "excited",
+   "anxious",
 ] as const;
 type Emotion = (typeof allowedEmotions)[number];
 
@@ -83,20 +83,20 @@ export default function ReflectionForm({
 
          let res;
          if (reflectionId) {
-            res = await API.patch<{ message: Reflection }>(
+            res = await API.patch<{ data: Reflection }>(
                `/reflections/update/${reflectionId}`,
-               payload
+               payload,
             );
             toast.success("Reflection updated");
          } else {
-            res = await API.post<{ message: Reflection }>(
+            res = await API.post<{ data: Reflection }>(
                "/reflections/create",
-               payload
+               payload,
             );
             toast.success("Reflection created");
          }
 
-         onSuccess(res.data.message);
+         onSuccess(res.data.data);
       } catch (err: unknown) {
          const msg =
             err instanceof Error ? err.message : "Failed to submit reflection";

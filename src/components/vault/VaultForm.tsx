@@ -124,13 +124,13 @@ export default function VaultForm({
          let res;
          if (vaultId) {
             // Update existing vault
-            res = await API.patch<{ message: Vault }>(
+            res = await API.patch<{ data: Vault }>(
                `/message-vault/update/${vaultId}`,
                payload,
             );
          } else {
             // Create new vault
-            res = await API.post<{ message: Vault }>(
+            res = await API.post<{ data: Vault }>(
                `/message-vault/create`,
                payload,
             );
@@ -139,7 +139,7 @@ export default function VaultForm({
          toast.success(vaultId ? "Vault updated" : "Vault created");
 
          // Pass the single created/updated Vault object to parent
-         onSuccess(res.data.message);
+         onSuccess(res.data.data);
       } catch (err: unknown) {
          const message =
             err instanceof Error ? err.message : "Failed to submit vault";

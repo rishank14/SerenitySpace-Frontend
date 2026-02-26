@@ -63,11 +63,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             ? { email: identifier, password }
             : { username: identifier, password };
 
-         const res = await API.post<{ message: AuthResponse }>(
+         const res = await API.post<{ data: AuthResponse }>(
             "/users/login",
             body,
          );
-         const data = res.data.message;
+         const data = res.data.data;
 
          localStorage.setItem("accessToken", data.accessToken);
          localStorage.setItem("userId", data.user._id);
@@ -91,15 +91,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
    const signup = async (username: string, email: string, password: string) => {
       setAuthLoading(true);
       try {
-         const res = await API.post<{ message: AuthResponse }>(
-            "/users/register",
-            {
-               username,
-               email,
-               password,
-            },
-         );
-         const data = res.data.message;
+         const res = await API.post<{ data: AuthResponse }>("/users/register", {
+            username,
+            email,
+            password,
+         });
+         const data = res.data.data;
 
          localStorage.setItem("accessToken", data.accessToken);
          localStorage.setItem("userId", data.user._id);
@@ -136,8 +133,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
    const refreshUser = async () => {
       setUser(null);
       try {
-         const res = await API.get<{ message: User }>("/users/current-user");
-         const userData = res.data.message;
+         const res = await API.get<{ data: User }>("/users/current-user");
+         const userData = res.data.data;
          setUser(userData);
          if (userData?._id) {
             localStorage.setItem("userId", userData._id);

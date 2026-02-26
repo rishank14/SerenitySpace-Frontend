@@ -26,7 +26,7 @@ const allowedEmotions = [
    "sad",
    "angry",
    "neutral",
-   "excited",
+   "anxious",
 ] as const;
 type Emotion = (typeof allowedEmotions)[number];
 
@@ -55,11 +55,11 @@ export default function ReflectionsPage() {
          if (filterEmotion) params.emotion = filterEmotion;
          if (filterTag) params.tag = filterTag;
 
-         const res = await API.get<{ message: { reflections: Reflection[] } }>(
+         const res = await API.get<{ data: { reflections: Reflection[] } }>(
             `/reflections/user/${currentUserId}`,
-            { params }
+            { params },
          );
-         setReflections(res.data.message.reflections || []);
+         setReflections(res.data.data.reflections || []);
       } catch (err: unknown) {
          const msg =
             err instanceof Error ? err.message : "Failed to fetch reflections";
@@ -85,7 +85,7 @@ export default function ReflectionsPage() {
          await API.delete(`/reflections/delete/${selectedReflectionId}`);
          toast.success("Reflection deleted");
          setReflections((prev) =>
-            prev.filter((r) => r._id !== selectedReflectionId)
+            prev.filter((r) => r._id !== selectedReflectionId),
          );
       } catch (err: unknown) {
          const msg =
@@ -113,7 +113,7 @@ export default function ReflectionsPage() {
             const exists = prev.find((r) => r._id === newReflection._id);
             if (exists) {
                return prev.map((r) =>
-                  r._id === newReflection._id ? newReflection : r
+                  r._id === newReflection._id ? newReflection : r,
                );
             }
             return [newReflection, ...prev];
@@ -204,7 +204,7 @@ export default function ReflectionsPage() {
                         title: editingReflection?.title || "",
                         content: editingReflection?.content || "",
                         emotion: allowedEmotions.includes(
-                           editingReflection?.emotion as Emotion
+                           editingReflection?.emotion as Emotion,
                         )
                            ? (editingReflection?.emotion as Emotion)
                            : undefined,

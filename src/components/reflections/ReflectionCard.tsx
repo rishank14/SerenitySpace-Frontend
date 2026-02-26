@@ -25,7 +25,6 @@ export interface Reflection {
 
 export interface ReflectionCardProps {
    reflection: Reflection;
-   currentUserId?: string;
    onEdit?: (reflection: Reflection) => void;
    onDelete?: (reflectionId: string) => void;
 }
@@ -98,7 +97,7 @@ export default function ReflectionCard({
                   <span>
                      {formatDateTime(reflection.createdAt).replace(
                         /am|pm/i,
-                        (m) => m.toUpperCase()
+                        (m) => m.toUpperCase(),
                      )}
                   </span>
 

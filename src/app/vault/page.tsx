@@ -33,15 +33,15 @@ export default function VaultPage() {
       setLoading(true);
       try {
          const [upcomingRes, deliveredRes] = await Promise.all([
-            API.get<{ message: { messages: Vault[] } }>(
+            API.get<{ data: { messages: Vault[] } }>(
                `/message-vault/upcoming/${userId}`,
             ),
-            API.get<{ message: { messages: Vault[] } }>(
+            API.get<{ data: { messages: Vault[] } }>(
                `/message-vault/delivered/${userId}`,
             ),
          ]);
-         setUpcoming(upcomingRes.data.message?.messages || []);
-         setDelivered(deliveredRes.data.message?.messages || []);
+         setUpcoming(upcomingRes.data.data?.messages || []);
+         setDelivered(deliveredRes.data.data?.messages || []);
       } catch (err) {
          const message =
             err instanceof Error ? err.message : "Failed to fetch vaults";
@@ -110,9 +110,9 @@ export default function VaultPage() {
                else stillUpcoming.push(v);
             });
 
-            // Deliver messages outside the state updater
+            // Schedule delivery outside the state updater
             if (readyToDeliver.length > 0) {
-               deliverVaults(readyToDeliver);
+               setTimeout(() => deliverVaults(readyToDeliver), 0);
             }
 
             return stillUpcoming;

@@ -63,7 +63,7 @@ export default function ChatbotWidget() {
          });
 
          const botReply: string =
-            res.data?.message?.reply || "Sorry, I didn’t understand that.";
+            res.data?.data?.reply || "Sorry, I didn't understand that.";
 
          // Add bot message **after typing animation finishes**
          setTimeout(() => {

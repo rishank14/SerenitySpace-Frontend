@@ -17,19 +17,9 @@ import { Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import API from "@/lib/axios";
 import { AxiosError } from "axios";
+import { Vent, Mood } from "@/components/vent/VentCard";
 
-export type Mood = "sad" | "angry" | "anxious" | "happy" | "neutral";
 export type Visibility = "public" | "private";
-
-export interface Vent {
-   _id: string;
-   message: string;
-   mood: Mood;
-   visibility: Visibility;
-   userId: string;
-   createdAt: string;
-   updatedAt: string;
-}
 
 interface VentFormValues {
    message: string;
@@ -74,23 +64,22 @@ export default function VentForm({
       setLoading(true);
       try {
          const res = ventId
-            ? await API.patch<{ message: Vent }>(
-                 `/vents/update/${ventId}`,
-                 values
-              )
-            : await API.post<{ message: Vent }>("/vents/create", values);
+            ? await API.patch<{ data: Vent }>(`/vents/update/${ventId}`, values)
+            : await API.post<{ data: Vent }>("/vents/create", values);
 
          toast.success(
-            ventId ? "Vent updated successfully!" : "Vent created successfully!"
+            ventId
+               ? "Vent updated successfully!"
+               : "Vent created successfully!",
          );
 
-         onSuccess(res.data.message);
+         onSuccess(res.data.data);
          form.reset(values);
       } catch (err: unknown) {
-         if (err instanceof Error) {
-            toast.error(err.message);
-         } else if (err instanceof AxiosError && err.response?.data?.message) {
+         if (err instanceof AxiosError && err.response?.data?.message) {
             toast.error(err.response.data.message);
+         } else if (err instanceof Error) {
+            toast.error(err.message);
          } else {
             toast.error("Failed to submit vent");
          }
@@ -119,7 +108,12 @@ export default function VentForm({
                         <FormControl>
                            <Textarea
                               {...field}
-                              ref={messageRef}
+                              ref={(el) => {
+                                 field.ref(el);
+                                 (
+                                    messageRef as React.MutableRefObject<HTMLTextAreaElement | null>
+                                 ).current = el;
+                              }}
                               placeholder="Write your vent..."
                               rows={4}
                               className="resize-none"

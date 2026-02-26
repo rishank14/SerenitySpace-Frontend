@@ -5,7 +5,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 // Type for refresh token response
 interface RefreshResponse {
-  message: {
+  data: {
     accessToken: string;
   };
 }
@@ -70,7 +70,7 @@ API.interceptors.response.use(
           {},
           { withCredentials: true }
         );
-        const newAccessToken = refreshRes.data.message.accessToken;
+        const newAccessToken = refreshRes.data.data.accessToken;
         localStorage.setItem("accessToken", newAccessToken);
 
         if (!originalRequest.headers) originalRequest.headers = {} as AxiosRequestHeaders;

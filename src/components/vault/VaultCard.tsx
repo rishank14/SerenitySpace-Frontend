@@ -75,7 +75,7 @@ export default function VaultCard({
                         {vault.delivered ? "Delivered At: " : "Deliver At: "}
                         {formatDateTime(vault.deliverAt).replace(
                            /am|pm/i,
-                           (m) => m.toUpperCase()
+                           (m) => m.toUpperCase(),
                         )}
                      </span>
 

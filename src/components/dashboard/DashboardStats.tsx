@@ -38,7 +38,7 @@ export default function DashboardStats() {
       async function fetchStats() {
          try {
             const res = await API.get("/dashboard/"); // Axios GET
-            setData(res.data?.message);
+            setData(res.data?.data);
          } catch (error) {
             console.error("Error fetching dashboard stats:", error);
             setData(null);
