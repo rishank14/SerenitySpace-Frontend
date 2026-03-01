@@ -5,7 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/context/AuthContext";
 import { Toaster } from "sonner";
 import NavbarSwitcher from "@/components/layout/NavbarSwitcher";
-import { Footer } from "@/components/layout/Footer";
+import FooterSwitcher from "@/components/layout/FooterSwitcher";
 
 const geistSans = Geist({
    variable: "--font-geist-sans",
@@ -35,7 +35,7 @@ export default function RootLayout({
    return (
       <html lang="en" suppressHydrationWarning>
          <body
-            className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+            className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
          >
             <ThemeProvider
                attribute="class"
@@ -45,8 +45,8 @@ export default function RootLayout({
             >
                <AuthProvider>
                   <NavbarSwitcher />
-                  <main className="pt-16">{children}</main>
-                  <Footer />
+                  <main className="pt-16 flex-1">{children}</main>
+                  <FooterSwitcher />
                   <Toaster
                      position="bottom-right"
                      richColors
